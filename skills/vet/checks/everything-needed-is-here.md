@@ -51,8 +51,15 @@ disk comparison still catches every missing file and every undeclared package.
   `virtual:*`, `~icons/*`, `.svelte-kit/*`, `.next/*`.
 - Type-only imports of packages present as `@types/*`, and `import type`
   statements resolving to declaration files.
-- Asset imports the bundler handles: `.css`, `.scss`, `.svg`, `.png`, `.jpg`,
-  `.webp`, `.json`, `?raw`, `?url`, `?worker` suffixes.
+- Bundler-special import suffixes that resolve to no file on disk: `?raw`,
+  `?url`, `?worker` — these are query-string directives to the bundler, not
+  paths, so there is nothing on disk to check.
+- Style and asset imports (`.css`, `.scss`, `.svg`, `.png`, `.jpg`, `.webp`,
+  `.json`, and the like) are **not** exempted from the existence check —
+  resolve the path like any other and fail it if the file is not there. A
+  referenced image or stylesheet that was never committed is a fresh-clone
+  break exactly like a missing component or an undeclared package; only the
+  bundler-special suffixes above are exempt, not the ordinary asset path.
 - Files under `node_modules/`, `.next/`, `dist/`, `build/`, `out/`, `coverage/`,
   `vendor/`, `.venv/`, or any generated output.
 - Tests, stories, mocks and fixtures, and anything they import.
