@@ -147,6 +147,16 @@ Standing constraint stated in every prompt: the check may read any file in the
 project; it must never write, edit, run a build, install a dependency, commit,
 or push.
 
+**Fixture-exclusion clarification, stated in every prompt:** a check's own
+"Do not flag" section excludes test/fixture/mock directories so it doesn't
+flag incidental test data in a real project. That exclusion is for *incidental*
+material only. If a file's own purpose — stated in its filename, a comment, or
+a sibling README — is specifically to demonstrate this class of check firing
+(a deliberately-broken smoke-test fixture), evaluate it as real application
+code; the exclusion must not swallow it. Without this, a fixture directory
+looks structurally identical to the class of file every check is told to
+ignore, and a smoke test silently stops proving anything.
+
 ### The reply contract
 
 A one-line verdict, always:

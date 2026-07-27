@@ -81,3 +81,9 @@ claude plugin validate .
 /reload-plugins
 /vet
 ```
+
+Installed plugins are copied to a cache directory, not run from the source tree.
+After editing a check or `SKILL.md`, `/plugin update vet@vet-tools` only
+refreshes the cache if `version` in `plugin.json` was bumped — during active
+development it's simpler to uninstall and reinstall to force a fresh copy:
+`claude plugin uninstall vet@vet-tools && claude plugin install vet@vet-tools`.
