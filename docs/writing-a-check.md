@@ -24,10 +24,10 @@ requires: intent                # optional — only `intent` is meaningful today
   collected files match — free `n/a` rows.
 - `requires: intent` marks a check that only makes sense when the person gave
   `/vet` a quoted description of what they asked for. The dispatcher drops it
-  otherwise. No shipped check declares this yet — it is reserved for a future
-  "did this match the ask" check, which cannot be built honestly without an
-  independent statement of intent (see `SKILL.md`'s design note on the fidelity
-  check, in the project's plan history, for why).
+  otherwise. No shipped check declares this today: a "did this match the ask"
+  fidelity check was considered and deliberately not built — judging intent
+  from the same artifact being judged is tautological, and intent transfers
+  fine through tickets and conversation without Vet's help.
 
 ## Body shape
 

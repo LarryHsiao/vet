@@ -29,8 +29,8 @@ Run it in the folder your project lives in. Vet figures out what to check on
 its own — files you've changed but haven't saved yet, or the whole project if
 nothing has changed recently, or everything if the project isn't tracked in Git
 at all. If you're on a line of work that already has some saved commits *and*
-unsaved changes on top, Vet will ask you to commit or clear those out first,
-rather than guess and check only part of it.
+unsaved changes on top, Vet will ask you to save those first — commit them the
+way you normally would — then run it again so it checks everything together.
 
 Other forms:
 
