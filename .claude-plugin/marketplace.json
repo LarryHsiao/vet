@@ -1,0 +1,14 @@
+{
+  "name": "vet-tools",
+  "description": "Quality-check tooling for features built with AI coding assistants.",
+  "owner": {
+    "name": "Vet maintainers"
+  },
+  "plugins": [
+    {
+      "name": "vet",
+      "source": "./",
+      "description": "Run /vet on work an AI assistant built, and get a plain-language report of what needs fixing before it reaches an engineer."
+    }
+  ]
+}

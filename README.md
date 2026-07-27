@@ -1,0 +1,83 @@
+# Vet
+
+You built a feature with an AI coding assistant. Before you hand it to an
+engineer, run `/vet`. It reads what changed and tells you, in plain language,
+what needs fixing and exactly what to say back to your assistant to fix it.
+
+Vet never edits your files, never commits, never installs anything, and never
+sends your code anywhere beyond the assistant you're already talking to.
+
+## Install
+
+```
+/plugin marketplace add <this-repo-url-or-local-path>
+/plugin install vet@vet-tools
+```
+
+## Use
+
+```
+/vet
+```
+
+Run it in the folder your project lives in. Vet figures out what to check on
+its own — files you've changed but haven't saved yet, or the whole project if
+nothing has changed recently, or everything if the project isn't tracked in Git
+at all.
+
+Other forms:
+
+```
+/vet all                                             # the whole project
+/vet recent                                          # just the last saved batch of work
+/vet src/components                                  # just one folder
+/vet "let people pick a plan and see their team"      # also checks whether it matches what you asked for
+/vet --gated                                         # walk through findings one at a time
+```
+
+## What it checks today
+
+- **Buttons and links work with a keyboard** — things that look clickable but
+  aren't reachable without a mouse.
+- **Screens handle waiting and failure** — a screen that goes blank forever
+  when data is loading or a request fails.
+- **Nothing on screen is fake data** — invented numbers, placeholder lists, and
+  buttons wired to nothing, left in by mistake.
+
+This is a starting set, not a complete one. See `docs/writing-a-check.md` to add
+more.
+
+## What it does not do
+
+It checks *how* the feature was built, not *whether it does what you asked for*
+— unless you tell it what you asked for (`/vet "..."`). It never edits, commits,
+or installs anything on its own.
+
+## For engineers
+
+The row set is deterministic — one row per check file, every run. Only the
+wording of the explanations varies between runs. Checks live as markdown under
+`skills/vet/checks/`. A project can override the whole set with `.vet/checks/*.md`
+in its own root; the override replaces the built-in checks entirely, it does not
+merge with them.
+
+## Adding a check
+
+See `docs/writing-a-check.md`.
+
+## Note
+
+Running `/vet all` inside this repo will flag `test/fixtures/broken-ui/`. That's
+intentional — those files are broken on purpose, as the fastest available smoke
+test for the tool itself.
+
+## Local development
+
+```
+cd vet
+claude plugin validate .
+/plugin marketplace add ./
+/plugin install vet@vet-tools
+/reload-plugins
+/vet
+```
