@@ -128,9 +128,31 @@ Only if already configured — never install anything to make one work.
 - `package.json` has a `lint` or `typecheck` script → run it.
 - No such script, but a `tsconfig.json` exists and `tsc` is reachable →
   `npx tsc --noEmit`.
-- `node_modules` is missing, or the command isn't found → the row is
-  **"Couldn't run — skipped,"** never a failure. Missing tooling is not a
-  defect in the feature.
+
+When a configured command can't run, the row is **never a failure** — missing
+tooling is not a defect in the feature. But whether to say anything about it
+depends entirely on whether the project has these checks set up in the first
+place:
+
+- **The project has them set up, but they can't run** (a `lint`/`typecheck`
+  script or a `tsconfig.json` exists, and `node_modules` is missing or the
+  command isn't found) → render the row as **"Couldn't run"** and say why, in
+  one plain line, naming the command to fix it: "This project has its own lint
+  and type checks, but its dependencies aren't installed, so I couldn't run
+  them. Run `npm install` in this folder and try `/vet` again to include them."
+  Never run the install yourself — offer it and let the person decide.
+
+  **This is an offer, never a gate.** Everything else proceeds exactly as
+  normal: all the dispatched checks still run, and the full report still
+  renders. Declining to install is a legitimate choice, not a problem to solve
+  — if the person runs `/vet` again without installing, state the same line
+  once more, plainly, and carry on. Never nag, never escalate the wording,
+  never withhold the report, and never ask them to confirm the choice.
+- **The project has none set up** (no `lint`/`typecheck` script and no
+  `tsconfig.json`) → render no mechanical row at all and say nothing about it.
+  There is nothing to install and nothing to fix; a "skipped" row here would
+  read as a missing step the person is expected to go and correct, which it
+  isn't.
 
 These render as leading rows, labelled "The project's own checks," above the
 dispatched checks.

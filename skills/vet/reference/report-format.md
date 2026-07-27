@@ -165,6 +165,25 @@ conversation.
 | `n/a` | Doesn't apply |
 | unparseable / timeout | Didn't finish |
 
+Mechanical rows (Step 5) don't use the wire protocol — they're not dispatched
+agents — and carry a fifth presentation, **Couldn't run**, used only when the
+project *has* lint/type checks configured but they can't execute. It never
+counts as a failure, and it always comes with the one-line reason and the
+command that would fix it:
+
+```
+The project's own checks — Couldn't run
+
+This project has its own lint and type checks, but its dependencies aren't
+installed, so I couldn't run them. Run `npm install` in this folder and try
+/vet again to include them.
+```
+
+A project with no lint or type checks configured gets **no mechanical row at
+all** — silence, not a "skipped" row. There is nothing to install and nothing
+to fix, and a skipped row would read as a chore the person is expected to go
+and complete.
+
 The wire protocol stays `pass`/`fail`/`n/a` regardless of presentation — a
 future voice change (terser, for an engineer audience) only touches this table,
 never the check files or the dispatch contract.

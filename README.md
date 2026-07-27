@@ -5,7 +5,10 @@ engineer, run `/vet`. It reads what changed and tells you, in plain language,
 what needs fixing and exactly what to say back to your assistant to fix it.
 
 Vet never edits your files, never commits, never installs anything, and never
-sends your code anywhere beyond the assistant you're already talking to.
+sends your code anywhere beyond the assistant you're already talking to. If
+running something would help — installing your project's dependencies so its
+own lint and type checks can run, say — it tells you the command and leaves the
+choice to you. Skipping it is fine; the report still runs either way.
 
 ## Install
 
@@ -55,7 +58,8 @@ It checks *how* the feature was built, not *whether it does what you asked for*.
 Judging that honestly would require an independent statement of intent, not just
 the code — so today `/vet "..."` records what you asked for and drops the "I
 didn't check fidelity" footer, but no check yet judges the work against it. It
-never edits, commits, or installs anything on its own.
+never edits, commits, or installs anything on its own — at most it names a
+command and leaves the decision to you.
 
 ## For engineers
 
