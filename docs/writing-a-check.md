@@ -64,8 +64,20 @@ in `Do not flag` so the dispatched agent doesn't have to infer it.
 If a check's `Fail when` names a suppression as a failure mode, the reply
 contract requires the corresponding `[FIX]` to say explicitly not to use it. Say
 this once in the check body so the dispatched agent carries it into the fix
-text — see `no-secrets`-style checks in the parent `/nazgul` skill this design
-is ported from for the pattern.
+text.
+
+The pattern, as used in `interactive-elements-accessible.md`:
+
+> The finding was previously flagged and has been made to "pass" by adding
+> `aria-hidden="true"`, `role="presentation"`, or an eslint-disable comment for
+> `jsx-a11y/*` rather than by fixing the element. Suppressing the warning is a
+> fail, and a worse one than the original.
+
+This matters more here than in a normal linter. The person reading the report
+will paste the fix straight back to an AI assistant, and an assistant asked to
+"make this check pass" will reach for the suppression first — it is faster and
+it works. The next run then comes back green with the defect still shipping,
+which is worse than never having checked.
 
 ## Adding a check: the checklist
 
