@@ -130,6 +130,43 @@ when no collected file matches, so a report can read `Doesn't apply` across the
 board with zero agents dispatched, and still count as "completed" for this
 footer.
 
+## Mechanical rows plus dispatched checks
+
+Step 5's mechanical rows sit in the same table as the dispatched checks, so
+they count in the same footer — `T` and `M` describe every row on screen, not
+just the dispatched ones:
+
+```
+I checked the 4 files you changed but haven't saved to the project's history yet.
+
+| # | What I checked                          | Result        |
+|---|------------------------------------------|---------------|
+| 1 | The code compiles                         | Fix this      |
+| 2 | The project's tests pass                  | Couldn't run  |
+| 3 | The project's linter passes               | Looks fine    |
+| 4 | Buttons and links work with a keyboard    | Looks fine    |
+| 5 | Screens handle waiting and failure        | Didn't finish |
+
+**1 thing to fix. 4 of 5 checks completed.**
+
+### 1. The code compiles
+
+**What's wrong**
+... (the compiler's own error output, rendered as this row's finding)
+
+Check 5 didn't reply in the expected format:
+
+    (raw reply dumped here, verbatim, in a fenced block)
+```
+
+Five rows on screen, so `T` is 5. `M` is 4: row 1's compile failure, row 2's
+`Couldn't run`, row 3's pass, and row 4's pass are each a completed
+determination — `Couldn't run` means Vet knows exactly why nothing ran, which
+is as definitive as a pass or a fail. Only row 5's timeout leaves its check
+without an answer, so it alone is the one row that doesn't count toward `M`.
+`N` is 1 — only row 1 is `Fix this`; a mechanical `Couldn't run` is never a
+failure, and neither is a dispatched `Didn't finish`.
+
 ## Stop-and-ask (saved work plus unsaved work on the same branch)
 
 No table at all — this is Step 2's own early exit, before any check is
@@ -210,3 +247,44 @@ the person is expected to go and complete.
 The wire protocol stays `pass`/`fail`/`n/a` regardless of presentation — a
 future voice change (terser, for an engineer audience) only touches this table,
 never the check files or the dispatch contract.
+
+## `HANDOFF.md` template
+
+```markdown
+# Handoff notes
+
+Written by Vet on <date>, against commit <short-sha> on branch <branch>.
+If the code has changed since, re-run `/vet` to refresh this file.
+
+## What this is meant to do
+<the intent argument if one was given; otherwise:>
+Not recorded — no description was given when this was generated.
+
+## What is real, and what is not
+<one bullet per finding from "Nothing pretends to be finished", naming the
+file and what is stubbed. If the check passed:>
+Everything on screen appears to come from a real source.
+
+## What it needs to run
+<required environment variables from the secrets check, by name only, never
+values; plus any missing packages or files from "Everything it needs is
+actually here". If both passed:>
+Nothing missing — a fresh clone should install and run.
+
+## What is known-broken
+<any mechanical row that failed, quoted plainly: "The code compiles — failing".
+If none failed or none ran:>
+Nothing known-broken at the time of writing.
+
+## What the person actually tried
+<their answer, verbatim; otherwise:>
+Not recorded.
+
+## What Vet did not check
+Vet checks how this was built, not whether it does what was asked for. It also
+does not check visual design, mobile layout, or performance.
+```
+
+Every section is always present. An empty section says so in words rather than
+being omitted — a missing heading reads as "not applicable", while "Not
+recorded." correctly reads as "nobody knows".

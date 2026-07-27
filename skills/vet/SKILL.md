@@ -21,9 +21,10 @@ allowed-tools:
 
 # Vet
 
-Vet checks work an AI coding assistant built, before it reaches an engineer. It
-is audit only: it never edits a file, never commits, never pushes, never installs
-anything. The person reading its report is the one who built the feature, not an
+Vet checks work an AI coding assistant built, before it reaches an engineer. Vet
+writes one file, which is its own — `HANDOFF.md`, plus `.vet/` scratch. It never
+edits the person's source, never commits, never pushes, never installs. The
+person reading its report is the one who built the feature, not an
 engineer — write and render everything with that reader in mind.
 
 ## Step 1 — Read the arguments
@@ -404,13 +405,21 @@ Shape (full worked example in `reference/report-format.md`):
 
    Section headings below the table follow the same rule — `### <N>. <name>`,
    a period after the number, never a dash or an em-dash.
-3. `**N things to fix. M of T checks completed.**` — three distinct numbers.
-   `N` = count of **Fix this** (fail) rows. `T` = total rows in the table, every
-   check that survived Step 4's filtering, whether it was dispatched or
-   resolved by the `applies_to` shortcut. `M` = count of those rows that
-   reached a definitive result — `pass`, `fail`, or `n/a` — as opposed to
-   **Didn't finish** (`?`, an error, timeout, or unparseable reply). In the
-   ordinary case nothing times out, so `M` equals `T`.
+3. `**N things to fix. M of T checks completed.**` — three distinct numbers,
+   and both `M` and `T` count **every row on screen**, mechanical rows
+   (Step 5) included — the footer describes the table the reader is looking
+   at, not a subset of it. `N` = count of **Fix this** (fail) rows, of either
+   kind. `T` = total rows in the table: every Step 5 mechanical row that
+   rendered, plus every check that survived Step 4's filtering, whether
+   dispatched or resolved by the `applies_to` shortcut. `M` = count of those
+   rows that reached a definitive result. For a dispatched check that is
+   `pass`, `fail`, or `n/a`, as opposed to **Didn't finish** (`?`, an error,
+   timeout, or unparseable reply). A mechanical row is always definitive —
+   `Looks fine`, `Fix this`, and `Couldn't run` are each a completed
+   determination, not a stall — so every mechanical row that rendered counts
+   toward `M` too; only a dispatched check's timeout or unparseable reply
+   keeps `M` below `T`. In the ordinary case nothing times out, so `M` equals
+   `T`.
 4. One `###` section per **Fix this** row, in table order: **What's wrong**
    (the `[WHAT]` text) then a blockquote holding `[FIX]`, with no further
    label — the person will copy whatever is on screen regardless of what it is
@@ -429,6 +438,38 @@ section the same way, tracking position by what has already appeared in the
 conversation — there is no separate state file. If there is no next finding,
 say so and print item 5/6 as the close.
 
+## Step 9 — Write `HANDOFF.md`
+
+The report tells the person what to fix. `HANDOFF.md` tells the **next
+reader** — an engineer's AI, which never sees the chat — what it cannot
+reconstruct from the code. Write it to the project root after the report.
+
+**Ask exactly one question first.** What the person actually exercised exists
+nowhere in the code, and no static check can recover it: *"Before I write the
+handoff notes — which parts of this did you actually try yourself? Anything
+you clicked through and saw working, and anything you never opened."*
+
+**This is an offer, never a gate — the same rule Step 5 applies to the install
+offer.** Write `HANDOFF.md` in this same turn regardless of what comes back.
+If an answer arrives, use it verbatim. If they decline, say nothing, or no
+answer is possible at all (a non-interactive run, or the turn simply ends),
+the "What the person actually tried" section reads exactly *"Not recorded."*
+and the file is written anyway, with a line telling them they can run `/vet`
+again and answer to fill it in. **Never** imply verification that did not
+happen, and never withhold the file waiting for a reply — a question with no
+file behind it has failed the one thing this step exists to do.
+
+This is the only question Vet asks. Everything else stays auto-detected.
+
+**Staleness.** Record the commit the file was generated against. On a later
+run, if `HANDOFF.md` exists and names a different commit, say so plainly and
+rewrite it. A handoff document describing code that has since changed misleads
+the receiver with authority — the exact failure this tool exists to prevent.
+
+**Vet writes this file and stops.** It does not commit it, does not stage it,
+does not push. Tell the person it was written and that committing it is their
+call. Vet writes one file, which is its own; it never edits their source.
+
 ## Vocabulary
 
 Never use *diff*, *HEAD*, *merge-base*, *working tree*, *staged*, *SHA*,
@@ -442,7 +483,9 @@ suggestion.
 - Dispatch is always parallel, in one message. Never sequential, never one
   check per turn (checks, not turns — `--gated` only paces the *reveal* of
   findings already computed).
-- Never edit a file, run a build, install a dependency, commit, or push.
+- Vet writes one file, which is its own — `HANDOFF.md`, plus `.vet/` scratch.
+  It never edits the person's source, never commits, never pushes, never
+  installs.
 - Never render a report with zero checks (Step 4).
 - Never mark a mechanical gate (Step 5) as a failure because tooling is absent.
 - Never rewrite a check's `[WHAT]` or `[FIX]` text (Step 7).
