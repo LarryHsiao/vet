@@ -136,14 +136,16 @@ No table at all — this is Step 2's own early exit, before any check is
 dispatched:
 
 ```
-This branch already has saved work on it, and there are also unsaved changes
-on top. Commit them or clear them out first — with `git commit` or by
-discarding them — then run /vet again so I check the whole thing at once.
+You have work here that's already saved, plus some newer changes that aren't
+saved yet. Save those newer changes first — commit them the way you normally
+would — then run /vet again and I'll check all of it together.
 ```
 
 This only fires during auto-detection (bare `/vet`), never for an explicit
-target like `/vet all` or `/vet recent`. Vet never commits, discards, or
-stashes anything on its own — it only asks.
+target like `/vet all` or `/vet recent`. Vet never commits, stashes, or undoes
+anything itself; it only asks. Say **save**, never *discard*, *clear out*,
+*reset*, or *stash* — naming those invites a non-technical person to destroy
+work they cannot recover.
 
 ## Gated mode (`/vet --gated`)
 
@@ -186,23 +188,24 @@ conversation.
 | unparseable / timeout | Didn't finish |
 
 Mechanical rows (Step 5) don't use the wire protocol — they're not dispatched
-agents — and carry a fifth presentation, **Couldn't run**, used only when the
-project *has* lint/type checks configured but they can't execute. It never
-counts as a failure, and it always comes with the one-line reason and the
-command that would fix it:
+agents — and carry a fifth presentation, **Couldn't run**, used only when a
+row's source resolves but the command can't actually execute. It never counts
+as a failure, and it always comes with the one-line reason and the command
+that would fix it:
 
 ```
-The project's own checks — Couldn't run
+The project's tests pass — Couldn't run
 
-This project has its own lint and type checks, but its dependencies aren't
-installed, so I couldn't run them. Run `npm install` in this folder and try
-/vet again to include them.
+This project has its own tests, but its dependencies aren't installed, so I
+couldn't run them. Run `npm install` in this folder and try /vet again to
+include them.
 ```
 
-A project with no lint or type checks configured gets **no mechanical row at
-all** — silence, not a "skipped" row. There is nothing to install and nothing
-to fix, and a skipped row would read as a chore the person is expected to go
-and complete.
+`The code compiles`, `The project's tests pass`, and `The project's linter
+passes` each resolve independently from their own source. A row whose source
+doesn't resolve at all gets **no row** — silence, not a "skipped" row. There is
+nothing to install and nothing to fix, and a skipped row would read as a chore
+the person is expected to go and complete.
 
 The wire protocol stays `pass`/`fail`/`n/a` regardless of presentation — a
 future voice change (terser, for an engineer audience) only touches this table,

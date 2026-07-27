@@ -14,6 +14,8 @@ allowed-tools:
   - Bash(wc *)
   - Bash(npm run lint*)
   - Bash(npm run typecheck*)
+  - Bash(npm run build*)
+  - Bash(npm run test*)
   - Bash(npx tsc --noEmit*)
 ---
 
@@ -41,6 +43,17 @@ path, treat it as the target; otherwise ignore it and note in one line that it
 wasn't understood.
 
 ## Step 2 — Work out what to check
+
+> **Project-type guard.** Check first for a `package.json` anywhere in the
+> project, excluding test/fixture directories (e.g. `test/fixtures/`) —
+> those hold deliberately-planted material for the dispatched checks to find,
+> not evidence that the project itself is JavaScript or TypeScript. If none
+> exists, Vet cannot check this project. Say so plainly and stop: "Vet only
+> understands JavaScript and TypeScript projects at the moment, and this one
+> doesn't look like either — so I haven't checked it. I'd rather tell you that
+> than give you a clean bill of health I can't back up." Never render a
+> report. A confident all-clear on a project Vet cannot read is the worst
+> output it can produce.
 
 Run, in order, stopping at the first that applies:
 
@@ -153,39 +166,48 @@ out with the check's agent and back in its reply.
 
 ## Step 5 — Run the project's own checks (optional leading rows)
 
-Only if already configured — never install anything to make one work.
+Only if already configured — never install anything to make one work. Compile,
+tests, and lint are different things, not one undifferentiated block: each of
+the three rows below resolves independently from its own source, and renders
+**only** when that source resolves.
 
-- `package.json` has a `lint` or `typecheck` script → run it.
-- No such script, but a `tsconfig.json` exists and `tsc` is reachable →
-  `npx tsc --noEmit`.
+- **`The code compiles`** resolves from a `typecheck` or `build` script in
+  `package.json`; failing that, from `npx tsc --noEmit` when a `tsconfig.json`
+  exists.
+- **`The project's tests pass`** resolves from a `test` script in
+  `package.json`.
+- **`The project's linter passes`** resolves from a `lint` script in
+  `package.json`.
 
-When a configured command can't run, the row is **never a failure** — missing
-tooling is not a defect in the feature. But whether to say anything about it
-depends entirely on whether the project has these checks set up in the first
-place:
+A row whose source doesn't resolve at all is not rendered — not even as
+"skipped." There is nothing to install and nothing to fix for that row, and a
+"skipped" row would read as a chore the person is expected to go and complete.
 
-- **The project has them set up, but they can't run** (a `lint`/`typecheck`
-  script or a `tsconfig.json` exists, and `node_modules` is missing or the
-  command isn't found) → render the row as **"Couldn't run"** and say why, in
-  one plain line, naming the command to fix it: "This project has its own lint
-  and type checks, but its dependencies aren't installed, so I couldn't run
-  them. Run `npm install` in this folder and try `/vet` again to include them."
-  Never run the install yourself — offer it and let the person decide.
+When a row's source *does* resolve but the command still can't actually run —
+`node_modules` is missing, or the command isn't found — the row is **never a
+failure**; missing tooling is not a defect in the feature. Render that row as
+**"Couldn't run"** and say why, in one plain line naming the command to fix
+it, e.g. for `The project's tests pass`: "This project has its own tests, but
+its dependencies aren't installed, so I couldn't run them. Run `npm install`
+in this folder and try `/vet` again to include them." Adapt the sentence to
+name the row in question (tests, lint, or the type/build check). Never run the
+install yourself — offer it and let the person decide.
 
-  **This is an offer, never a gate.** Everything else proceeds exactly as
-  normal: all the dispatched checks still run, and the full report still
-  renders. Declining to install is a legitimate choice, not a problem to solve
-  — if the person runs `/vet` again without installing, state the same line
-  once more, plainly, and carry on. Never nag, never escalate the wording,
-  never withhold the report, and never ask them to confirm the choice.
-- **The project has none set up** (no `lint`/`typecheck` script and no
-  `tsconfig.json`) → render no mechanical row at all and say nothing about it.
-  There is nothing to install and nothing to fix; a "skipped" row here would
-  read as a missing step the person is expected to go and correct, which it
-  isn't.
+**This is an offer, never a gate.** Everything else proceeds exactly as
+normal: all the dispatched checks still run, and the full report still
+renders. Declining to install is a legitimate choice, not a problem to solve —
+if the person runs `/vet` again without installing, state the same line once
+more, plainly, and carry on. Never nag, never escalate the wording, never
+withhold the report, and never ask them to confirm the choice.
 
-These render as leading rows, labelled "The project's own checks," above the
-dispatched checks.
+These render as leading rows, above the dispatched checks, each labelled with
+its own name — no longer grouped under one shared heading.
+
+> `The code compiles` is the direct detection of the top failure mode. Lint is
+> retained knowingly despite polish being out of scope: its output is
+> mechanically true, cannot false-positive, and rules such as `exhaustive-deps`
+> and `no-undef` catch real defects rather than style. If it proves noisy in
+> practice, this is the paragraph to revisit.
 
 ## Step 6 — Dispatch
 
