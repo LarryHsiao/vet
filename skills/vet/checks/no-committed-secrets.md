@@ -61,7 +61,14 @@ configuration the receiver would need and cannot find.
   Firebase web config, a Supabase anon key, a Sentry DSN, any `NEXT_PUBLIC_*` or
   `VITE_*` variable. These are designed to be visible in a browser bundle.
 - Documentation and comments whose value is clearly marked fake, sample,
-  example, or placeholder.
+  example, or placeholder — **and** whose value itself also reads as
+  non-functional (obviously truncated, `xxx`-filled, `<your-key-here>`,
+  repeated characters, or too short for the format it claims). Both must hold.
+  A label alone is not enough: a full-length, well-formed credential sitting
+  under a heading like "Example .env" is treated as real no matter what the
+  surrounding prose calls it — the label describes intent, not the value's
+  own shape, and intent is exactly what an assistant that left a live key
+  behind would also have claimed.
 - Test fixtures using obviously non-production values (`test_key_123`,
   `EXAMPLE_KEY`, `<your-token-here>`).
 - Public keys and certificates: `-----BEGIN PUBLIC KEY-----`, `ssh-rsa AAAA…` in
@@ -75,10 +82,25 @@ configuration the receiver would need and cannot find.
 
 **Two rules this check must obey.**
 
-**Never echo a secret back.** Name the file and the kind of credential, and
-quote at most the first few characters of the prefix. A report that reprints a
-credential has copied it somewhere new — including into the transcript of
-whoever reads the report.
+**Never echo a secret back.** Name the file and the kind of credential. What,
+if anything, may be quoted depends on the shape that matched:
+
+- **Concrete key shapes** (Stripe, AWS, GitHub, Slack, OpenAI/Anthropic,
+  Google, private keys, JWTs): quote at most the fixed public marker —
+  `sk_live_…`, `ghp_…`, `AKIA…` — and nothing beyond it. The marker identifies
+  the provider; it carries none of the secret.
+- **Heuristic shapes** (a connection-string password, a `*_SECRET` /
+  `*_PASSWORD` / `*_TOKEN` / `*_API_KEY` value): these have no fixed public
+  marker, so "the first few characters" would be the first few characters of
+  the actual secret. **Quote nothing at all.** Name the file and describe the
+  kind of value in words — "a database connection string with a password
+  embedded in it" — never any character of the value itself.
+
+In neither case quote enough surrounding context for a reader to reconstruct
+the value — not the full assignment line, not a connection string with only
+the password masked. A report that reprints a credential, or enough of its
+neighborhood to rebuild it, has copied it somewhere new — including into the
+transcript of whoever reads the report.
 
 **The `[FIX]` must say rotate, not merely delete.** Removing a key from a file
 does not un-leak it if it was ever committed; it remains in the project's
