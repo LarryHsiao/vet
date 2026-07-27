@@ -4,11 +4,13 @@ You built a feature with an AI coding assistant. Before you hand it to an
 engineer, run `/vet`. It reads what changed and tells you, in plain language,
 what needs fixing and exactly what to say back to your assistant to fix it.
 
-Vet never edits your files, never commits, never installs anything, and never
-sends your code anywhere beyond the assistant you're already talking to. If
-running something would help — installing your project's dependencies so its
-own lint and type checks can run, say — it tells you the command and leaves the
-choice to you. Skipping it is fine; the report still runs either way.
+Vet writes one file, which is its own — `HANDOFF.md`. It never edits your
+source, never commits, never pushes, never installs anything, and never sends
+your code anywhere beyond the assistant you're already talking to. If running
+something would help — installing your project's dependencies so its own lint
+and type checks can run, say — it tells you the command and leaves the choice
+to you. Skipping it is fine; the report still runs either way. Committing
+`HANDOFF.md` afterward is your call, not something Vet does for you.
 
 ## Install
 
@@ -42,15 +44,40 @@ Other forms:
 
 ## What it checks today
 
-- **Buttons and links work with a keyboard** — things that look clickable but
-  aren't reachable without a mouse.
-- **Screens handle waiting and failure** — a screen that goes blank forever
-  when data is loading or a request fails.
-- **Nothing on screen is fake data** — invented numbers, placeholder lists, and
-  buttons wired to nothing, left in by mistake.
+Three rows run the project's own tooling, and only appear when their source
+resolves — nothing to install, nothing to configure:
+
+- **The code compiles** — the project's own `typecheck` or `build` script, or
+  `npx tsc --noEmit` when there's a `tsconfig.json` but no such script.
+- **The project's tests pass** — the project's own `test` script.
+- **The project's linter passes** — the project's own `lint` script.
+
+Three more are dispatched, one subagent each, over the files that changed (or
+the whole project, depending on what `/vet` decides to check):
+
+- **Everything it needs is actually here** — a file imported but never
+  committed, a package imported but missing from `package.json`: the
+  fresh-clone break your own machine can't show you.
+- **No private keys or config left in the code** — a committed `.env`, a
+  hardcoded credential, or a required environment variable nothing documents.
+- **Nothing pretends to be finished** — hardcoded data, stub handlers, or
+  placeholder assets left in without saying so. A labelled stub — a comment, a
+  name like `SAMPLE_TEAM`, visible "sample data" text — passes on purpose;
+  only the unlabelled kind gets flagged.
 
 This is a starting set, not a complete one. See `docs/writing-a-check.md` to add
 more.
+
+## HANDOFF.md
+
+Alongside the report, Vet writes `HANDOFF.md` to your project root — the one
+file it ever writes. The report is for you, the person who built the feature;
+`HANDOFF.md` is for the next reader, an engineer's AI that never saw this
+conversation and can't reconstruct from the code alone what's real versus
+stubbed, what the project needs to run, what's known-broken, and what you
+actually clicked through and tried yourself. It's meant to be committed
+alongside the work — tell the engineer's assistant to read it first, before it
+reads anything else.
 
 ## What it does not do
 
@@ -58,14 +85,18 @@ It checks *how* the feature was built, not *whether it does what you asked for*.
 Judging that honestly would require an independent statement of intent, not just
 the code — so today `/vet "..."` records what you asked for and drops the "I
 didn't check fidelity" footer, but no check yet judges the work against it. It
-never edits, commits, or installs anything on its own — at most it names a
-command and leaves the decision to you.
+writes one file, `HANDOFF.md`, and nothing else — it never edits, commits,
+pushes, or installs anything on its own; at most it names a command and leaves
+the decision to you. And it only understands JavaScript and TypeScript
+projects: with no `package.json` in sight, it says so plainly and stops,
+rather than handing back a clean bill of health it has no way to back up.
 
 ## For engineers
 
-The table is deterministic — one row per check file, and the Result cell holds
-a fixed status word with nothing appended, so the same code checked twice gives
-byte-identical rows and a diff of two reports shows only what actually moved.
+The table is deterministic — one row per check (mechanical or dispatched), and
+the Result cell holds a fixed status word with nothing appended, so the same
+code checked twice gives byte-identical rows and a diff of two reports shows
+only what actually moved.
 The explanations below the table are model-written prose and will vary in
 wording between runs.
 
@@ -86,7 +117,8 @@ See `docs/writing-a-check.md`.
 
 ## Note
 
-Running `/vet all` inside this repo will flag `test/fixtures/broken-ui/`. That's
+Running `/vet all` inside this repo will flag `test/fixtures/pretends-finished/`,
+`test/fixtures/missing-pieces/`, and `test/fixtures/leaked-secrets/`. That's
 intentional — those files are broken on purpose, as the fastest available smoke
 test for the tool itself.
 
