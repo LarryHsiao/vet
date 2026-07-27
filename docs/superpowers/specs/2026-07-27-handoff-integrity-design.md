@@ -127,10 +127,65 @@ media hosts, invented metrics, and `// TODO` sitting where the real call belongs
 Framing shift: the failure is not that this is untidy. It is that the receiver
 reads it as the intended design.
 
-## What is deliberately unchanged
+## Form: a skill, not a project rule
 
-This is a **content change, not an architecture change**. All of the following
-survive untouched:
+Considered and rejected: shipping a rule into the project's `CLAUDE.md` so the
+PM's assistant is shaped continuously while building, rather than checked
+afterwards.
+
+The argument for it was real — prevention is cheaper than detection, a stub
+labelled at creation never becomes a defect, and a rule needs nobody to remember
+anything. The argument against won: writing into a project's `CLAUDE.md` is
+genuinely invasive. That file may already have contents, may be committed to a
+company repo, and may conflict with existing conventions. It is not a free act.
+
+**Accepted consequence, stated rather than hidden:** nothing makes anyone run
+Vet. If the PM forgets, it may as well not exist. This is a known, chosen hole,
+not an oversight — and it is the first thing to revisit if adoption disappoints.
+
+## Output: a chat report *and* a committed artifact
+
+The report alone evaporates. The PM reads it, fixes things, hands off — and the
+receiving AI, the actual audience this whole design is built around, never sees a
+word of it. So `/vet` also writes **`HANDOFF.md`** into the project root.
+
+**This changes a core promise and the change must be explicit.** Vet was
+"audit only — never edits." It now writes exactly one file: its own handoff
+document. It still never edits the person's source, never commits, never pushes,
+never installs. The rule becomes: *Vet writes one file, which is its own, and
+nothing else.* Committing `HANDOFF.md` remains the person's action, not Vet's.
+
+### What `HANDOFF.md` carries
+
+Everything the receiving AI cannot reconstruct from the code:
+
+- **What this is meant to do** — from the optional intent argument if given
+- **What is real, and what is a stub** — from the fake/unlabelled-stub check
+- **What is not wired up yet** — handlers that log, endpoints that return fixtures
+- **What is known-broken** — failing mechanical rows, verbatim
+- **What configuration it needs** — required env vars, from the secrets check
+- **What the person actually tried** — see below
+
+### The one thing Vet must ask
+
+**What the PM actually exercised exists nowhere in the code.** Vet cannot detect
+it, and the receiving AI badly needs it — "I clicked through the pricing page and
+it worked; I never opened the team screen" is worth more than any static finding.
+
+So this is the single question Vet asks the person. Everything else stays
+auto-detected. If they decline to answer, the section says plainly that nothing
+was recorded, and never implies verification that did not happen.
+
+### Staleness
+
+A `HANDOFF.md` describing code that has since changed is worse than none — it
+misleads the receiver with authority, which is the exact failure this tool
+exists to prevent. The file records the commit it was generated against, and a
+run that finds the file already present and stale says so and rewrites it.
+
+## What is otherwise unchanged
+
+Beyond the artifact, this is a **content change, not an architecture change**:
 
 - the two-channel wire protocol and its per-run token
 - the pinned table (fixed status words, byte-identical rows between runs)
@@ -163,4 +218,27 @@ produce.
 - Replace the fixtures under `test/fixtures/broken-ui/` with ones that trip the
   new checks, keeping at least one file that must **not** trip a check, to prove
   discrimination rather than pattern-matching on messiness
-- Update `README.md`'s "What it checks today" and `docs/writing-a-check.md`
+- Add the `HANDOFF.md` writing step, the single "what did you actually try?"
+  question, and the staleness guard
+- Add `Write` to the skill's `allowed-tools` for `HANDOFF.md` (already added for
+  the large-diff patch path) and restate the audit-only rule as *writes one file,
+  its own*
+- Update `README.md`'s "What it checks today", its "never edits anything" claim,
+  and `docs/writing-a-check.md`
+
+## Open gaps, carried knowingly
+
+Recorded so they are not rediscovered as surprises:
+
+1. **Nothing triggers Vet.** Accepted with the skill-only decision above.
+2. **The "everything it needs is here" check needs a non-git path.** It compares
+   imports against committed files — but the most likely first user never ran
+   `git init`. Without a disk-based fallback the load-bearing check silently
+   finds nothing in exactly that case.
+3. **Secrets already in git history.** The secrets check inspects the working
+   tree, so a `.env` that was committed and later deleted reports clean while a
+   live credential sits in history. Costs one `git log --diff-filter=A` over
+   `.env`-shaped paths.
+4. **Nothing verifies a fix landed.** An assistant asked to "make this pass"
+   reaches for the suppression first. Anti-suppression clauses help; nothing
+   confirms the specific finding was genuinely resolved rather than silenced.
