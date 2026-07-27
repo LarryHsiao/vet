@@ -110,6 +110,21 @@ when no collected file matches, so a report can read `Doesn't apply` across the
 board with zero agents dispatched, and still count as "completed" for this
 footer.
 
+## Stop-and-ask (saved work plus unsaved work on the same branch)
+
+No table at all — this is Step 2's own early exit, before any check is
+dispatched:
+
+```
+This branch already has saved work on it, and there are also unsaved changes
+on top. Commit them or clear them out first — with `git commit` or by
+discarding them — then run /vet again so I check the whole thing at once.
+```
+
+This only fires during auto-detection (bare `/vet`), never for an explicit
+target like `/vet all` or `/vet recent`. Vet never commits, discards, or
+stashes anything on its own — it only asks.
+
 ## Gated mode (`/vet --gated`)
 
 The table and count render immediately — the whole picture, up front — but only

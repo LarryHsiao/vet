@@ -45,21 +45,32 @@ Run, in order, stopping at the first that applies:
 
 1. `git rev-parse --show-toplevel` fails → **target: project** (whole tree).
    Sentence: "This project isn't tracked in Git, so I checked the whole thing."
-2. `git status --porcelain` is non-empty → **target: changes** (uncommitted).
-   Sentence: "I checked the N files you changed but haven't saved to the
-   project's history yet."
-3. Clean tree, current branch has commits ahead of the default branch (the first
-   of `main`, `master`, `origin/HEAD` that resolves via
-   `git merge-base HEAD <base>`) → **target: changes**, diffed against that
-   merge-base. Sentence: "I checked everything on this line of work — N files
-   since it split off from `<base>`."
+2. Current branch has commits ahead of the default branch (the first of `main`,
+   `master`, `origin/HEAD` that resolves via `git merge-base HEAD <base>`) —
+   check `git status --porcelain` before deciding what this means:
+   - **Non-empty (dirty)** → **stop. Do not dispatch any checks.** There is
+     already-saved work on this branch and unsaved work sitting on top of it,
+     and checking only one of the two would silently review a partial
+     picture. Render exactly this and end the turn: "This branch already has
+     saved work on it, and there are also unsaved changes on top. Commit them
+     or clear them out first — with `git commit` or by discarding them — then
+     run `/vet` again so I check the whole thing at once." Vet never commits,
+     discards, or stashes anything itself; it only asks.
+   - **Empty (clean)** → **target: changes**, diffed against the merge-base.
+     Sentence: "I checked everything on this line of work — N files since it
+     split off from `<base>`."
+3. `git status --porcelain` is non-empty (and Step 2 didn't already apply —
+   i.e. this branch has no commits ahead of the default branch) →
+   **target: changes** (uncommitted). Sentence: "I checked the N files you
+   changed but haven't saved to the project's history yet."
 4. Clean tree, on the default branch → **target: changes**, `git show HEAD`.
    Sentence: "Nothing is unsaved, so I checked the most recent batch of changes."
 5. Anything else → **target: project**. Sentence: "I couldn't find recent
    changes, so I checked the whole project."
 
 If the user gave `all`, `recent`, or a path explicitly, use that target and
-build the matching sentence instead of running this cascade.
+build the matching sentence instead of running this cascade — the stop-and-ask
+in step 2 only applies to auto-detection, never to an explicit target.
 
 **Collecting files for a `changes` target**: the diff itself, plus untracked
 files from `git ls-files --others --exclude-standard` rendered as synthetic
