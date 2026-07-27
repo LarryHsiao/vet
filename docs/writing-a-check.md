@@ -74,6 +74,13 @@ is ported from for the pattern.
    trip the new check, and ideally one that should clearly pass it (see
    `TeamList.tsx`'s role in the `no-fake-data` check: it fetches real data, so
    it must **not** be flagged, proving the check discriminates rather than
-   pattern-matching on messiness).
+   pattern-matching on messiness). This path sits under a directory literally
+   named `fixtures/`, which every check's own `Do not flag` section tells it to
+   ignore — that would silently defeat the whole smoke test. `SKILL.md` Step 6
+   carries a standing "Fixture-exclusion clarification" in every check's
+   dispatch prompt for exactly this: a file whose stated purpose (a sibling
+   README, in this case) is to trip the check is evaluated as real code, not
+   exempted. Don't duplicate that clarification per check — it lives once, at
+   the protocol level.
 3. Run the verification procedure in the project's plan history (negative
    control, positive control, `n/a` path) against the new check specifically.

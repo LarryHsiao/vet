@@ -30,7 +30,7 @@ I checked the 6 files you changed but haven't saved to the project's history yet
 | 2 | Screens handle waiting and failure        | Fix this     |
 | 3 | Nothing on screen is fake data             | Looks fine   |
 
-**2 things to fix. 3 of 3 checks ran.**
+**2 things to fix. 3 of 3 checks completed.**
 
 ### 1. Buttons and links work with a keyboard
 
@@ -77,7 +77,7 @@ I checked the 6 files you changed but haven't saved to the project's history yet
 | 2 | Screens handle waiting and failure        | Looks fine   |
 | 3 | Nothing on screen is fake data             | Looks fine   |
 
-**0 things to fix. 3 of 3 checks ran.**
+**0 things to fix. 3 of 3 checks completed.**
 
 I checked how this was built, not whether it does what you asked for. To check
 that too, run `/vet "describe what you asked for"`.
@@ -94,16 +94,21 @@ This project isn't tracked in Git, so I checked the whole thing.
 | 2 | Screens handle waiting and failure        | Didn't finish    |
 | 3 | Nothing on screen is fake data              | Doesn't apply    |
 
-**0 things to fix. 1 of 3 checks ran.**
+**0 things to fix. 2 of 3 checks completed.**
 
 Check 2 didn't reply in the expected format:
 
     (raw reply dumped here, verbatim, in a fenced block)
 ```
 
+Here `T` (total rows) is 3, but `M` (rows that reached a definitive result) is
+only 2 — the two `n/a` rows resolved cleanly, while row 2 timed out and never
+reached one, so it doesn't count toward `M` even though it still occupies a row.
+
 `n/a` rows cost nothing — the `applies_to` shortcut skips the agent entirely
 when no collected file matches, so a report can read `Doesn't apply` across the
-board with zero agents dispatched.
+board with zero agents dispatched, and still count as "completed" for this
+footer.
 
 ## Gated mode (`/vet --gated`)
 
@@ -119,7 +124,7 @@ I checked the 6 files you changed but haven't saved to the project's history yet
 | 2 | Screens handle waiting and failure        | Fix this     |
 | 3 | Nothing on screen is fake data             | Looks fine   |
 
-**2 things to fix. 3 of 3 checks ran.**
+**2 things to fix. 3 of 3 checks completed.**
 
 ### 1. Buttons and links work with a keyboard
 

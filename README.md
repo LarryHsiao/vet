@@ -31,7 +31,7 @@ Other forms:
 /vet all                                             # the whole project
 /vet recent                                          # just the last saved batch of work
 /vet src/components                                  # just one folder
-/vet "let people pick a plan and see their team"      # also checks whether it matches what you asked for
+/vet "let people pick a plan and see their team"      # records what you asked for (no check judges fidelity against it yet — see below)
 /vet --gated                                         # walk through findings one at a time
 ```
 
@@ -49,9 +49,11 @@ more.
 
 ## What it does not do
 
-It checks *how* the feature was built, not *whether it does what you asked for*
-— unless you tell it what you asked for (`/vet "..."`). It never edits, commits,
-or installs anything on its own.
+It checks *how* the feature was built, not *whether it does what you asked for*.
+Judging that honestly would require an independent statement of intent, not just
+the code — so today `/vet "..."` records what you asked for and drops the "I
+didn't check fidelity" footer, but no check yet judges the work against it. It
+never edits, commits, or installs anything on its own.
 
 ## For engineers
 

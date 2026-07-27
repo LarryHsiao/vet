@@ -259,8 +259,13 @@ Shape (full worked example in `reference/report-format.md`):
 1. `TARGET_SENTENCE` as the opening line.
 2. The table: `| # | What I checked | Result |`, in check-number order,
    including any Step 5 mechanical rows first.
-3. `**N things to fix. M of M checks ran.**` — M counts every check dispatched,
-   including `n/a` and `?`.
+3. `**N things to fix. M of T checks completed.**` — three distinct numbers.
+   `N` = count of **Fix this** (fail) rows. `T` = total rows in the table, every
+   check that survived Step 4's filtering, whether it was dispatched or
+   resolved by the `applies_to` shortcut. `M` = count of those rows that
+   reached a definitive result — `pass`, `fail`, or `n/a` — as opposed to
+   **Didn't finish** (`?`, an error, timeout, or unparseable reply). In the
+   ordinary case nothing times out, so `M` equals `T`.
 4. One `###` section per **Fix this** row, in table order: **What's wrong**
    (the `[WHAT]` text) then a blockquote holding `[FIX]`, with no further
    label — the person will copy whatever is on screen regardless of what it is
