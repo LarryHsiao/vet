@@ -63,11 +63,22 @@ command and leaves the decision to you.
 
 ## For engineers
 
-The row set is deterministic — one row per check file, every run. Only the
-wording of the explanations varies between runs. Checks live as markdown under
-`skills/vet/checks/`. A project can override the whole set with `.vet/checks/*.md`
-in its own root; the override replaces the built-in checks entirely, it does not
-merge with them.
+The table is deterministic — one row per check file, and the Result cell holds
+a fixed status word with nothing appended, so the same code checked twice gives
+byte-identical rows and a diff of two reports shows only what actually moved.
+The explanations below the table are model-written prose and will vary in
+wording between runs.
+
+Each run mints a random token that every check must echo in its verdict line.
+This exists so that a check quoting the reply format back at us can't have its
+own example parsed as a real verdict — the failure mode being guarded is a
+silent `pass` from a check that never ran. A reply missing the token is scored
+`Didn't finish`, never rescued.
+
+Checks live as markdown under `skills/vet/checks/`. A project can override the
+whole set with `.vet/checks/*.md` in its own root; the override replaces the
+built-in checks entirely, it does not merge with them. `.vet/` is also Vet's
+own scratch directory — add it to `.gitignore`.
 
 ## Adding a check
 

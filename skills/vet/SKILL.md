@@ -8,6 +8,7 @@ allowed-tools:
   - Grep
   - Agent
   - AskUserQuestion
+  - Write
   - Bash(git *)
   - Bash(ls *)
   - Bash(wc *)
@@ -45,17 +46,34 @@ Run, in order, stopping at the first that applies:
 
 1. `git rev-parse --show-toplevel` fails → **target: project** (whole tree).
    Sentence: "This project isn't tracked in Git, so I checked the whole thing."
-2. Current branch has commits ahead of the default branch (the first of `main`,
-   `master`, `origin/HEAD` that resolves via `git merge-base HEAD <base>`) —
-   check `git status --porcelain` before deciding what this means:
+2. Current branch has commits ahead of its base — check `git status --porcelain`
+   before deciding what this means.
+
+   **Resolving the base, in this order** (first that resolves via
+   `git rev-parse --verify <ref>` wins): `origin/HEAD`, then `origin/main`,
+   `origin/master`, `origin/develop`, `origin/trunk`, then the local `main`,
+   `master`, `develop`, `trunk`. **Prefer the remote-tracking ref** — on a
+   project whose default branch *is* `main`, a local `main` base resolves to
+   the current branch itself, yields zero commits ahead, and silently drops
+   through to rule 4, where only the single most recent commit gets checked.
+   People work directly on the default branch constantly, so this is a common
+   path, not an edge case. `origin/main` keeps unpushed commits visible.
+
+   **Counting commits ahead**: `git rev-list --count <base>..HEAD`. Greater
+   than zero means this rule applies. If no base resolves at all (a repo with
+   no remote and no conventionally-named branch), skip to rule 3.
    - **Non-empty (dirty)** → **stop. Do not dispatch any checks.** There is
      already-saved work on this branch and unsaved work sitting on top of it,
      and checking only one of the two would silently review a partial
-     picture. Render exactly this and end the turn: "This branch already has
-     saved work on it, and there are also unsaved changes on top. Commit them
-     or clear them out first — with `git commit` or by discarding them — then
-     run `/vet` again so I check the whole thing at once." Vet never commits,
-     discards, or stashes anything itself; it only asks.
+     picture. Render exactly this and end the turn: "You have work here that's
+     already saved, plus some newer changes that aren't saved yet. Save those
+     newer changes first — commit them the way you normally would — then run
+     `/vet` again and I'll check all of it together." Vet never commits,
+     stashes, or undoes anything itself; it only asks.
+
+     Say **save**, never *discard*, *clear out*, *reset*, or *stash*. Undoing
+     work is not the outcome being asked for here, and naming it as an option
+     invites a non-technical person to destroy work they cannot recover.
    - **Empty (clean)** → **target: changes**, diffed against the merge-base.
      Sentence: "I checked everything on this line of work — N files since it
      split off from `<base>`."
@@ -75,9 +93,14 @@ in step 2 only applies to auto-detection, never to an explicit target.
 **Collecting files for a `changes` target**: the diff itself, plus untracked
 files from `git ls-files --others --exclude-standard` rendered as synthetic
 `+++`-only additions. Regardless of `.gitignore` contents, always hard-exclude
-by path: `node_modules/`, `.next/`, `dist/`, `build/`, `out/`, `.venv/`,
-`vendor/`, `coverage/`, `.git/`, any lockfile, and any file over 200 KB or
-non-text.
+by path: `.vet/`, `node_modules/`, `.next/`, `dist/`, `build/`, `out/`,
+`.venv/`, `vendor/`, `coverage/`, `.git/`, any lockfile, and any file over
+200 KB or non-text.
+
+`.vet/` is excluded first and always, in every target mode. It is where Step 3
+writes its own patch file, so without this a second run collects Vet's output
+from the first and hands it to the checks as if it were the person's work —
+Vet auditing its own scratch paper, silently, forever after.
 
 **Whole-project mode's size gate**: count candidate source files after the
 exclusions above. Over 400, call `AskUserQuestion` once, offering the two or
@@ -93,8 +116,15 @@ anything the person will read. Say "the files you changed."
 ## Step 3 — Prepare what the checks will read
 
 If the collected diff is under 500 lines, pass it inline in each check's prompt.
-Otherwise write it once to `.vet/changes-<timestamp>.patch` under the project
-root and pass that path instead. This is the only write Vet ever performs.
+Otherwise use `Write` to put it once in `.vet/changes-<timestamp>.patch` under
+the project root, and pass that path instead.
+
+This is the only write Vet ever performs, and it is scratch space, not a change
+to the person's work: `.vet/` holds nothing but Vet's own intermediate files,
+is excluded from collection by Step 2, and is listed in the project's
+`.gitignore` by convention. It never touches a tracked file. If the write
+fails for any reason, fall back to passing the diff inline and truncating at
+500 lines with a note saying so — never abandon the run over scratch space.
 
 ## Step 4 — Find the checks
 
@@ -166,15 +196,19 @@ times out yields status `?`, presented as **Didn't finish**.
 
 Assemble each check's prompt in this exact order:
 
-1. `You are check #<N> of Vet: "<check name>".`
-2. **The reply contract in full** — reproduced verbatim below. Put it before
-   the check's own body so it is not drowned out.
+Mint this run's `<RUNTOKEN>` first (see the reply contract below) — one token
+for the whole run, shared by every check in it.
+
+1. `You are check #<N> of Vet: "<check name>". This run's token is <RUNTOKEN>.`
+2. **The reply contract in full** — reproduced verbatim below, with
+   `<RUNTOKEN>` substituted throughout. Put it before the check's own body so
+   it is not drowned out.
 3. The target: the inline diff, or the patch file path, or the project root.
 4. `INTENT: <the quoted string>` — only if one was given in Step 1. Omit the
    line entirely otherwise.
 5. The check file's body, verbatim.
-6. `Remember — the verdict line first. A detail block only if the verdict is
-   fail. Nothing else.`
+6. `Remember — the verdict line first, carrying the token VET-<RUNTOKEN>-<N>.
+   A detail block only if the verdict is fail. Nothing else.`
 
 Standing constraint stated in every prompt: the check may read any file in the
 project; it must never write, edit, run a build, install a dependency, commit,
@@ -192,40 +226,61 @@ ignore, and a smoke test silently stops proving anything.
 
 ### The reply contract
 
-A one-line verdict, always:
+**First, mint a run token.** Once per `/vet` invocation, before dispatching
+anything, generate a short random token — 6+ characters, letters and digits,
+e.g. `K7ta9Q`. Call it `<RUNTOKEN>`. The *same* token goes to every check in
+this run, and a *different* one is minted on the next run. Never reuse a token
+across runs, and never use a token that appears anywhere in this file.
+
+Every verdict line is prefixed with it:
 
 ```
-<N>|<pass|fail|n/a>|<a short note, one line>
+VET-<RUNTOKEN>-<N>|<pass|fail|n/a>|<a short note, one line>
 ```
 
+So a run whose token is `K7ta9Q` expects check 1 to answer:
+
+```
+VET-K7ta9Q-1|pass|nothing flagged
+```
+
+- `<RUNTOKEN>` is the exact token handed to this check. Reproduce it verbatim.
 - `<N>` must match the number this check was assigned.
 - Status is exactly one of `pass`, `fail`, `n/a` — nothing else.
-- The note is a single line. No markdown, no line breaks.
+- The note is a single line. No markdown, no line breaks, no bold.
 
-**WRONG:**
+The token exists so that no line printed in this file — or quoted back by a
+check that restates the format before answering — can ever be mistaken for a
+real verdict. Only a line bearing this run's freshly-minted token counts.
+
+**WRONG** (preamble before the verdict):
 ```
 Here is my finding:
-1|pass|nothing flagged
+VET-K7ta9Q-1|pass|nothing flagged
 ```
-**WRONG:**
+**WRONG** (verdict buried under prose):
 ```
 ## Verdict
 
-The diff does not introduce any issues.
+The change does not introduce any issues.
 
-1|pass|ok
+VET-K7ta9Q-1|pass|ok
+```
+**WRONG** (token dropped — unparseable, scores as Didn't finish):
+```
+1|pass|nothing flagged
 ```
 **RIGHT:**
 ```
-1|pass|nothing flagged
+VET-K7ta9Q-1|pass|nothing flagged
 ```
 
 **Only when the verdict is `fail`**, immediately follow the verdict line with a
 detail block, delimited by sentinels that cannot be produced by accident:
 
 ```
-3|fail|3 clickable elements cannot be reached with a keyboard
-===VET-DETAIL-3===
+VET-K7ta9Q-3|fail|3 clickable elements cannot be reached with a keyboard
+===VET-DETAIL-K7ta9Q-3===
 [WHAT]
 Three things that look and behave like buttons are built from plain `<div>`
 elements with an onClick handler: `PricingCard.tsx` (the "Choose plan" tile),
@@ -240,7 +295,7 @@ button with a real `<button type="button">` carrying the same className and
 onClick. Do not add `role="button"` and `tabIndex={0}` to keep the div — use the
 real element. For the X in Modal.tsx, add `aria-label="Close"` since it has no
 text. Do not silence any lint rule to make this pass.
-===END-VET-DETAIL-3===
+===END-VET-DETAIL-K7ta9Q-3===
 ```
 
 Contract rules for the detail block:
@@ -262,16 +317,35 @@ Contract rules for the detail block:
 
 ## Step 7 — Read the replies
 
-For each reply, scan for the first line matching
-`^\s*(\d+)\s*\|\s*(pass|fail|n/a)\s*\|(.*)$`. That alone produces a complete
-table row: index must match this check's assigned number and status must be one
-of the three values, or the row becomes `?` and the raw reply is dumped in a
-fenced block beneath the table.
+For each reply, scan for lines matching, case-insensitively and tolerating
+surrounding whitespace or markdown emphasis:
+
+```
+^[\s*_`]*VET-<RUNTOKEN>-(\d+)\s*\|\s*(pass|fail|n/a)\s*\|(.*)$
+```
+
+Three rules, and the order matters:
+
+- **`<RUNTOKEN>` is this run's minted token, substituted literally.** A line
+  without it is not a verdict, no matter how well-formed it looks. This is what
+  makes the contract's own worked examples — and any echo of them — inert.
+- **Take the *last* such match in the reply, not the first.** A check that
+  restates the format before answering emits its template first and its real
+  verdict last; taking the first would score the template.
+- Index must match this check's assigned number and status must be one of the
+  three values, or the row becomes `?` and the raw reply is dumped in a fenced
+  block beneath the table.
+
+Never relax the token requirement to "rescue" a reply that dropped it. An
+unparseable reply becomes **Didn't finish** and says so — visibly wrong is
+recoverable, silently wrong is not. This is the guard on the failure this whole
+tool is built to avoid: a check that quietly reports `pass` without having
+looked at anything.
 
 Only for rows whose status is `fail`, additionally scan the same reply for
-`^===VET-DETAIL-<N>===\s*$` through `^===END-VET-DETAIL-<N>===\s*$`, and within
-that span split on `^\[WHAT\]$` and `^\[FIX\]$`. Degrade one level at a time,
-never abort the row:
+`^===VET-DETAIL-<RUNTOKEN>-<N>===\s*$` through
+`^===END-VET-DETAIL-<RUNTOKEN>-<N>===\s*$`, and within that span split on
+`^\[WHAT\]$` and `^\[FIX\]$`. Degrade one level at a time, never abort the row:
 
 - No detail block found → render the row with its short note only, plus "(no
   detail returned)".
@@ -292,6 +366,22 @@ Shape (full worked example in `reference/report-format.md`):
 1. `TARGET_SENTENCE` as the opening line.
 2. The table: `| # | What I checked | Result |`, in check-number order,
    including any Step 5 mechanical rows first.
+
+   **The Result cell holds the status words and nothing else** — exactly
+   `Fix this`, `Looks fine`, `Doesn't apply`, `Didn't finish`, or (mechanical
+   rows only) `Couldn't run`. No bold, no italics, no em-dash, no appended
+   note, no count, no filename. The check's short note does not belong here;
+   it is already carried by the `###` section below for failures, and is not
+   shown at all otherwise. Likewise the `#` cell holds the bare number and the
+   "What I checked" cell holds the check's `name` frontmatter verbatim.
+
+   This is pinned because the table is the one part of the report that must be
+   *comparable between runs*: the same code checked twice must produce
+   byte-identical rows, so a person can see at a glance that nothing changed.
+   Prose varies; the table must not.
+
+   Section headings below the table follow the same rule — `### <N>. <name>`,
+   a period after the number, never a dash or an em-dash.
 3. `**N things to fix. M of T checks completed.**` — three distinct numbers.
    `N` = count of **Fix this** (fail) rows. `T` = total rows in the table, every
    check that survived Step 4's filtering, whether it was dispatched or

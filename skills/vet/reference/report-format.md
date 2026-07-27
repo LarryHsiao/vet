@@ -5,19 +5,39 @@ report's *voice* can be tuned without touching dispatch logic.
 
 ## Wire spec (recap)
 
+Every run mints a fresh `<RUNTOKEN>` (6+ random alphanumerics) shared by all its
+checks. Both the verdict line and the detail sentinels carry it:
+
 ```
-<N>|<pass|fail|n/a>|<short note>
-===VET-DETAIL-<N>===
+VET-<RUNTOKEN>-<N>|<pass|fail|n/a>|<short note>
+===VET-DETAIL-<RUNTOKEN>-<N>===
 [WHAT]
 ...
 [FIX]
 ...
-===END-VET-DETAIL-<N>===
+===END-VET-DETAIL-<RUNTOKEN>-<N>===
 ```
+
+The token is not decoration. Without it, a check that helpfully restates the
+reply format before answering has its own quoted example parsed as its verdict
+— and since the canonical example is a `pass`, that yields a silent all-clear
+from a check that never looked at anything. A per-run token makes every example
+in every document inert, and the parser takes the **last** matching line rather
+than the first, so a template echoed ahead of the real answer cannot win.
 
 The detail block is emitted only on `fail`, is optional from the parser's point
 of view (a missing or malformed block degrades the row, never drops it), and is
 never rewritten — only reflowed and capped.
+
+## The table is fixed; the prose is not
+
+Result cells hold exactly one of `Fix this`, `Looks fine`, `Doesn't apply`,
+`Didn't finish`, or `Couldn't run` — no bold, no em-dash, no appended note or
+count. Headings are `### <N>. <name>`, with a period.
+
+The same code checked twice must produce byte-identical table rows, so someone
+can see at a glance that nothing moved. Explanations below the table will vary
+in wording between runs; the table must not.
 
 ## Default (batch) report
 
