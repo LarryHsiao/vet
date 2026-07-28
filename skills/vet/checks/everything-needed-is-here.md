@@ -13,8 +13,8 @@ handoff goes to reconstructing an environment rather than doing the work.
 
 Resolve every import in the target and report the ones that would not resolve
 for someone starting from a fresh clone. Use the subsection below matching the
-file's language — JavaScript/TypeScript, Dart, and Go import resolution are
-different problems wearing the same shape.
+file's language — JavaScript/TypeScript, Dart/Flutter, and Go import
+resolution are different problems wearing the same shape.
 
 **Two ways to resolve, and both must be tried in order, for every language
 below.** If the project is tracked in git, compare against the files git
@@ -108,6 +108,8 @@ file and every undeclared package.
 - Tests and anything under `test/`, `test_driver/`, `integration_test/`.
 - A `path:` or `git:` dependency you have not checked the referenced location
   for. If you cannot confirm it is missing, do not guess.
+- Transitive imports inside third-party pub packages. Only imports written in
+  this project's own files are in scope.
 - More than three instances. Name the three clearest and count the rest.
 
 ## Go
@@ -136,6 +138,8 @@ file and every undeclared package.
   package path.
 - Files under `vendor/` — a vendored, checked-in copy of a resolved
   dependency.
+- Transitive imports inside third-party modules. Only imports written in this
+  project's own files are in scope.
 - Generated files: `*_gen.go`, `*.pb.go`, and anything carrying a `// Code
   generated ... DO NOT EDIT.` header.
 - Test files (`_test.go`) and anything under `testdata/`.

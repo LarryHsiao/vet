@@ -134,9 +134,9 @@ in step 2 only applies to auto-detection, never to an explicit target.
 **Collecting files for a `changes` target**: the diff itself, plus untracked
 files from `git ls-files --others --exclude-standard` rendered as synthetic
 `+++`-only additions. Regardless of `.gitignore` contents, always hard-exclude
-by path: `.vet/`, `node_modules/`, `.next/`, `dist/`, `build/`, `out/`,
-`.venv/`, `vendor/`, `coverage/`, `.git/`, any lockfile, and any file over
-200 KB or non-text.
+by path: `.vet/`, `node_modules/`, `.next/`, `dist/`, `build/`, `.dart_tool/`,
+`out/`, `.venv/`, `vendor/`, `coverage/`, `.git/`, any lockfile, and any file
+over 200 KB or non-text.
 
 `.vet/` is excluded first and always, in every target mode. It is where Step 3
 writes its own patch file, so without this a second run collects Vet's output
@@ -493,9 +493,10 @@ reconstruct from the code. Write it to the project root after the report.
 
 **Naming test gaps.** For each dispatched check's row that resolved `fail` in
 Step 7, take the file(s) named in its `[WHAT]` text. For each such file,
-search test-shaped files (`*.test.*`, `*.spec.*`, anything under
-`__tests__/`) in the checked target for a reference to that file — an
-`import` or `require` naming its path or basename, with or without extension.
+search test-shaped files (`*.test.*`, `*.spec.*`, `*_test.go`, `*_test.dart`,
+anything under `__tests__/` or `test/`) in the checked target for a reference
+to that file — an `import` or `require` naming its path or basename, with or
+without extension.
 A same-named test file that does not itself reference the flagged file does
 not count; only an actual reference does.
 
@@ -512,10 +513,10 @@ Presence only.
 
 **When `TARGET_KIND` is `changes`**, also consider every file in Step 2's
 collected changes matching the dispatched checks' source extensions
-(`**/*.tsx`, `**/*.jsx`, `**/*.ts`, `**/*.js`, `**/*.vue`, `**/*.svelte`),
-excluding test/story/fixture/mock files by the same names used throughout the
-checks. Skip any file already named in the flagged-file part above — it is
-not named twice.
+(`**/*.tsx`, `**/*.jsx`, `**/*.ts`, `**/*.js`, `**/*.vue`, `**/*.svelte`,
+`**/*.dart`, `**/*.go`), excluding test/story/fixture/mock files by the same
+names used throughout the checks. Skip any file already named in the
+flagged-file part above — it is not named twice.
 
 For each remaining touched file, run the same reference search as above. If
 no test file references it, add it to a second list within the same section.

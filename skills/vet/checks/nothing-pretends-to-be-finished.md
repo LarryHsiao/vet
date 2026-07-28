@@ -105,6 +105,13 @@ not build it. Use the subsection below matching the file's language.
 **Do not flag**
 
 - Anything carrying an honest label, per *Pass when*.
+- Vendored or scaffolded widget code the person did not write themselves — the
+  stock `flutter create` counter-app boilerplate left behind in a fresh
+  `lib/main.dart`, and generated or vendored widget packages. Flag the call
+  sites they wrote, not the scaffold.
+- Demo, example and playground code — pub's convention is an `example/`
+  directory of intentionally hardcoded demo data, the Dart/Flutter analogue of
+  the JavaScript section's `demo/`/`examples/`/`playground/`.
 - Generated files: `*.g.dart`, `*.freezed.dart`, and anything under
   `.dart_tool/` or `build/`.
 - Tests and anything under `test/`, `test_driver/`, `integration_test/`.
@@ -147,6 +154,9 @@ not build it. Use the subsection below matching the file's language.
 
 - Anything carrying an honest label, per *Pass when*, including a handler that
   returns `http.StatusNotImplemented`.
+- Demo and example code — an `examples/` directory or a `cmd/<name>demo/`
+  binary, Go's analogues of the JavaScript section's
+  `demo/`/`examples/`/`playground/`.
 - Generated files: `*_gen.go`, `*.pb.go`, and anything carrying a `// Code
   generated ... DO NOT EDIT.` header.
 - Test files (`_test.go`) and anything under `testdata/`.
