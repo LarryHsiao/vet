@@ -87,9 +87,10 @@ the code — so today `/vet "..."` records what you asked for and drops the "I
 didn't check fidelity" footer, but no check yet judges the work against it. It
 writes one file, `HANDOFF.md`, and nothing else — it never edits, commits,
 pushes, or installs anything on its own; at most it names a command and leaves
-the decision to you. And it only understands JavaScript and TypeScript
-projects: with no `package.json` in sight, it says so plainly and stops,
-rather than handing back a clean bill of health it has no way to back up.
+the decision to you. And it only understands JavaScript/TypeScript, Dart/Flutter, and Go
+projects: with none of `package.json`, `pubspec.yaml`, or `go.mod` in sight, it
+says so plainly and stops, rather than handing back a clean bill of health it
+has no way to back up.
 
 ## For engineers
 
@@ -117,12 +118,16 @@ See `docs/writing-a-check.md`.
 
 ## Note
 
-This repo has no root `package.json`, so it isn't itself a JavaScript or
-TypeScript project — running `/vet` here trips the project-type guard and
-refuses, rather than checking anything. The fixtures under
-`test/fixtures/pretends-finished/`, `test/fixtures/missing-pieces/`, and
-`test/fixtures/leaked-secrets/` are exercised instead by copying them into a
-separate scratch project — see `docs/writing-a-check.md`.
+This repo has no root `package.json`, `pubspec.yaml`, or `go.mod`, so it isn't
+itself a JavaScript/TypeScript, Dart/Flutter, or Go project — running `/vet`
+here trips the project-type guard and refuses, rather than checking anything.
+The fixtures under `test/fixtures/` are exercised instead by copying them into
+a separate scratch project — see `docs/writing-a-check.md`. Each of the two
+file-scoped checks has a JS, Dart, and Go fixture pair
+(`missing-pieces`/`missing-pieces-dart`/`missing-pieces-go`,
+`pretends-finished`/`pretends-finished-dart`/`pretends-finished-go`); the
+secrets check has only one (`leaked-secrets/`), since its rule doesn't branch
+by language.
 
 `docs/superpowers/plans/2026-07-27-handoff-integrity.md` is a fourth,
 deliberate trip-point for the secrets check: it quotes the same fake key
