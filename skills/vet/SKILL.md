@@ -444,6 +444,25 @@ The report tells the person what to fix. `HANDOFF.md` tells the **next
 reader** — an engineer's AI, which never sees the chat — what it cannot
 reconstruct from the code. Write it to the project root after the report.
 
+**Naming test gaps.** For each dispatched check's row that resolved `fail` in
+Step 7, take the file(s) named in its `[WHAT]` text. For each such file,
+search test-shaped files (`*.test.*`, `*.spec.*`, anything under
+`__tests__/`) in the checked target for a reference to that file — an
+`import` or `require` naming its path or basename, with or without extension.
+A same-named test file that does not itself reference the flagged file does
+not count; only an actual reference does.
+
+Render one line per flagged file: if no reference was found, "`<file>`
+(flagged above for "`<check name>`"): no test file references it." If one was
+found, "`<file>` (flagged above for "`<check name>`"): covered by `<test
+file>` — worth checking whether it exercises this specific defect." If Step 7
+produced no `Fix this` rows from the dispatched checks at all, the whole
+section reads: "Nothing flagged, so nothing to name here."
+
+This never opens the matched test file to judge whether it actually exercises
+the flagged defect — that judgment is the engineer's AI's to make, not Vet's.
+Presence only.
+
 **Ask exactly one question first.** What the person actually exercised exists
 nowhere in the code, and no static check can recover it: *"Before I write the
 handoff notes — which parts of this did you actually try yourself? Anything

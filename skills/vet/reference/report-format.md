@@ -274,6 +274,11 @@ Nothing missing — a fresh clone should install and run.
 If none failed or none ran:>
 Nothing known-broken at the time of writing.
 
+## What has no test
+<one line per Fix-this dispatched-check finding, naming whether any test file
+actually references the flagged file. If none of the dispatched checks failed:>
+Nothing flagged, so nothing to name here.
+
 ## What the person actually tried
 <their answer, verbatim; otherwise:>
 Not recorded.
@@ -285,4 +290,6 @@ does not check visual design, mobile layout, or performance.
 
 Every section is always present. An empty section says so in words rather than
 being omitted — a missing heading reads as "not applicable", while "Not
-recorded." correctly reads as "nobody knows".
+recorded." correctly reads as "nobody knows". `What has no test` follows the
+same rule: "Nothing flagged, so nothing to name here" reads as "checked, found
+nothing to report," not as the section having been skipped.
