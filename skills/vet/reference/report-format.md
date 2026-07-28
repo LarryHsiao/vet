@@ -276,8 +276,18 @@ Nothing known-broken at the time of writing.
 
 ## What has no test
 <one line per Fix-this dispatched-check finding, naming whether any test file
-actually references the flagged file. If none of the dispatched checks failed:>
+actually references the flagged file. On a changes-scoped run, also a second
+list of touched-but-unflagged files with no test at all, capped at three plus
+a count. If none of the dispatched checks failed and nothing touched lacks a
+test:>
 Nothing flagged, so nothing to name here.
+
+<worked example of both halves together:>
+- `src/PricingCard.tsx` (flagged above for "Nothing pretends to be
+  finished"): no test file references it.
+- `src/Sidebar.tsx`, `src/Footer.tsx`, `src/Header.tsx` (touched by this
+  change, no defect flagged): no test file references any of them, and 2
+  more of the same kind.
 
 ## What the person actually tried
 <their answer, verbatim; otherwise:>
