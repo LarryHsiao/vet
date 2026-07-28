@@ -44,43 +44,41 @@ in wording between runs; the table must not.
 ```
 I checked the 6 files you changed but haven't saved to the project's history yet.
 
-| # | What I checked                          | Result       |
-|---|------------------------------------------|--------------|
-| 1 | Buttons and links work with a keyboard    | Fix this     |
-| 2 | Screens handle waiting and failure        | Fix this     |
-| 3 | Nothing on screen is fake data             | Looks fine   |
+| # | What I checked                              | Result       |
+|---|-----------------------------------------------|--------------|
+| 1 | Everything it needs is actually here          | Fix this     |
+| 2 | No private keys or config left in the code    | Fix this     |
+| 3 | Nothing pretends to be finished                | Looks fine   |
 
 **2 things to fix. 3 of 3 checks completed.**
 
-### 1. Buttons and links work with a keyboard
+### 1. Everything it needs is actually here
 
 **What's wrong**
-Three things that look and behave like buttons are built from plain `<div>`
-elements with an onClick handler: `PricingCard.tsx` (the "Choose plan" tile),
-`FilterBar.tsx` (the three sort chips), and `Modal.tsx` (the X in the corner).
-Nothing about them tells the browser they are buttons. Someone using a keyboard
-instead of a mouse — which includes every screen-reader user — cannot reach
-these at all. For a paid-plan selector that is a blocked purchase.
+`src/App.tsx` imports `date-fns`, which isn't listed in `package.json` — a
+fresh install won't have it — and imports `./Sidebar`, a file that doesn't
+exist anywhere in the project. Both work on the machine that built them and
+break the moment someone else clones the repo.
 
-> In src/components/PricingCard.tsx, src/components/FilterBar.tsx and
-> src/components/Modal.tsx, replace every `<div onClick={...}>` that acts as a
-> button with a real `<button type="button">` carrying the same className and
-> onClick. Do not add `role="button"` and `tabIndex={0}` to keep the div — use
-> the real element. For the X in Modal.tsx, add `aria-label="Close"` since it
-> has no text. Do not silence any lint rule to make this pass.
+> In package.json, add `date-fns` to dependencies at the version this project
+> needs. Then either create src/Sidebar.tsx with the component src/App.tsx
+> expects, or remove the import if the sidebar was never meant to ship yet. Do
+> not delete the date-fns import to make the error disappear — the code needs
+> the thing it's asking for.
 
-### 2. Screens handle waiting and failure
+### 2. No private keys or config left in the code
 
 **What's wrong**
-`TeamList.tsx` returns nothing while the team list is loading, so the screen is
-blank for however long the request takes, and the failure path is swallowed —
-`.catch(() => {})` — so a request that fails looks identical to one that is
-still loading. There is no way to tell the two apart, and no way to retry.
+`src/config.ts` hardcodes a live Stripe secret key and a database connection
+string with its password in plain text. Both are committed to the project's
+history now, and anyone with read access to the repo — including whoever reads
+this report next — can use them as-is.
 
-> In src/components/TeamList.tsx, render a loading skeleton while `members` is
-> null, and render a message with a retry button when the fetch fails instead
-> of silently catching the error. Do not remove the catch — replace it with one
-> that sets an error state the component actually renders.
+> Revoke the Stripe key referenced in src/config.ts and issue a new one; do
+> the same for the database password. Move both new values into a `.env` file
+> that's git-ignored, read them with `process.env`, and add their variable
+> names — not the values — to `.env.example`. Deleting the lines here does not
+> un-leak them; they remain reachable in the project's history until rotated.
 
 I checked how this was built, not whether it does what you asked for. To check
 that too, run `/vet "describe what you asked for"`.
@@ -91,11 +89,11 @@ that too, run `/vet "describe what you asked for"`.
 ```
 I checked the 6 files you changed but haven't saved to the project's history yet.
 
-| # | What I checked                          | Result       |
-|---|------------------------------------------|--------------|
-| 1 | Buttons and links work with a keyboard    | Looks fine   |
-| 2 | Screens handle waiting and failure        | Looks fine   |
-| 3 | Nothing on screen is fake data             | Looks fine   |
+| # | What I checked                              | Result       |
+|---|-----------------------------------------------|--------------|
+| 1 | Everything it needs is actually here          | Looks fine   |
+| 2 | No private keys or config left in the code    | Looks fine   |
+| 3 | Nothing pretends to be finished                | Looks fine   |
 
 **0 things to fix. 3 of 3 checks completed.**
 
@@ -108,11 +106,11 @@ that too, run `/vet "describe what you asked for"`.
 ```
 This project isn't tracked in Git, so I checked the whole thing.
 
-| # | What I checked                          | Result           |
-|---|------------------------------------------|------------------|
-| 1 | Buttons and links work with a keyboard    | Doesn't apply    |
-| 2 | Screens handle waiting and failure        | Didn't finish    |
-| 3 | Nothing on screen is fake data              | Doesn't apply    |
+| # | What I checked                              | Result           |
+|---|-----------------------------------------------|------------------|
+| 1 | Everything it needs is actually here          | Doesn't apply    |
+| 2 | No private keys or config left in the code    | Didn't finish    |
+| 3 | Nothing pretends to be finished                | Doesn't apply    |
 
 **0 things to fix. 2 of 3 checks completed.**
 
@@ -130,20 +128,59 @@ when no collected file matches, so a report can read `Doesn't apply` across the
 board with zero agents dispatched, and still count as "completed" for this
 footer.
 
+## Mechanical rows plus dispatched checks
+
+Step 5's mechanical rows sit in the same table as the dispatched checks, so
+they count in the same footer — `T` and `M` describe every row on screen, not
+just the dispatched ones:
+
+```
+I checked the 4 files you changed but haven't saved to the project's history yet.
+
+| # | What I checked                              | Result        |
+|---|-----------------------------------------------|---------------|
+| 1 | The code compiles                             | Fix this      |
+| 2 | The project's tests pass                      | Couldn't run  |
+| 3 | The project's linter passes                    | Looks fine    |
+| 4 | Everything it needs is actually here          | Looks fine    |
+| 5 | No private keys or config left in the code    | Didn't finish |
+
+**1 thing to fix. 4 of 5 checks completed.**
+
+### 1. The code compiles
+
+**What's wrong**
+... (the compiler's own error output, rendered as this row's finding)
+
+Check 5 didn't reply in the expected format:
+
+    (raw reply dumped here, verbatim, in a fenced block)
+```
+
+Five rows on screen, so `T` is 5. `M` is 4: row 1's compile failure, row 2's
+`Couldn't run`, row 3's pass, and row 4's pass are each a completed
+determination — `Couldn't run` means Vet knows exactly why nothing ran, which
+is as definitive as a pass or a fail. Only row 5's timeout leaves its check
+without an answer, so it alone is the one row that doesn't count toward `M`.
+`N` is 1 — only row 1 is `Fix this`; a mechanical `Couldn't run` is never a
+failure, and neither is a dispatched `Didn't finish`.
+
 ## Stop-and-ask (saved work plus unsaved work on the same branch)
 
 No table at all — this is Step 2's own early exit, before any check is
 dispatched:
 
 ```
-This branch already has saved work on it, and there are also unsaved changes
-on top. Commit them or clear them out first — with `git commit` or by
-discarding them — then run /vet again so I check the whole thing at once.
+You have work here that's already saved, plus some newer changes that aren't
+saved yet. Save those newer changes first — commit them the way you normally
+would — then run /vet again and I'll check all of it together.
 ```
 
 This only fires during auto-detection (bare `/vet`), never for an explicit
-target like `/vet all` or `/vet recent`. Vet never commits, discards, or
-stashes anything on its own — it only asks.
+target like `/vet all` or `/vet recent`. Vet never commits, stashes, or undoes
+anything itself; it only asks. Say **save**, never *discard*, *clear out*,
+*reset*, or *stash* — naming those invites a non-technical person to destroy
+work they cannot recover.
 
 ## Gated mode (`/vet --gated`)
 
@@ -153,15 +190,15 @@ the first **Fix this** section follows:
 ```
 I checked the 6 files you changed but haven't saved to the project's history yet.
 
-| # | What I checked                          | Result       |
-|---|------------------------------------------|--------------|
-| 1 | Buttons and links work with a keyboard    | Fix this     |
-| 2 | Screens handle waiting and failure        | Fix this     |
-| 3 | Nothing on screen is fake data             | Looks fine   |
+| # | What I checked                              | Result       |
+|---|-----------------------------------------------|--------------|
+| 1 | Everything it needs is actually here          | Fix this     |
+| 2 | No private keys or config left in the code    | Fix this     |
+| 3 | Nothing pretends to be finished                | Looks fine   |
 
 **2 things to fix. 3 of 3 checks completed.**
 
-### 1. Buttons and links work with a keyboard
+### 1. Everything it needs is actually here
 
 **What's wrong**
 ... (identical to the batch example above)
@@ -186,24 +223,73 @@ conversation.
 | unparseable / timeout | Didn't finish |
 
 Mechanical rows (Step 5) don't use the wire protocol — they're not dispatched
-agents — and carry a fifth presentation, **Couldn't run**, used only when the
-project *has* lint/type checks configured but they can't execute. It never
-counts as a failure, and it always comes with the one-line reason and the
-command that would fix it:
+agents — and carry a fifth presentation, **Couldn't run**, used only when a
+row's source resolves but the command can't actually execute. It never counts
+as a failure, and it always comes with the one-line reason and the command
+that would fix it:
 
 ```
-The project's own checks — Couldn't run
+The project's tests pass — Couldn't run
 
-This project has its own lint and type checks, but its dependencies aren't
-installed, so I couldn't run them. Run `npm install` in this folder and try
-/vet again to include them.
+This project has its own tests, but its dependencies aren't installed, so I
+couldn't run them. Run `npm install` in this folder and try /vet again to
+include them.
 ```
 
-A project with no lint or type checks configured gets **no mechanical row at
-all** — silence, not a "skipped" row. There is nothing to install and nothing
-to fix, and a skipped row would read as a chore the person is expected to go
-and complete.
+`The code compiles`, `The project's tests pass`, and `The project's linter
+passes` each resolve independently from their own source. A row whose source
+doesn't resolve at all gets **no row** — silence, not a "skipped" row. There is
+nothing to install and nothing to fix, and a skipped row would read as a chore
+the person is expected to go and complete.
 
 The wire protocol stays `pass`/`fail`/`n/a` regardless of presentation — a
 future voice change (terser, for an engineer audience) only touches this table,
 never the check files or the dispatch contract.
+
+## `HANDOFF.md` template
+
+```markdown
+# Handoff notes
+
+Written by Vet on <date>, against commit <short-sha> on branch <branch>.
+If the code has changed since, re-run `/vet` to refresh this file.
+
+## What this is meant to do
+<the intent argument if one was given; otherwise:>
+Not recorded — no description was given when this was generated.
+
+## What is real, and what is not
+<one bullet per finding from "Nothing pretends to be finished", naming the
+file and what is stubbed. If the check passed:>
+Everything on screen appears to come from a real source.
+
+## What it needs to run
+<required environment variables from the secrets check, by name only, never
+values; plus any missing packages or files from "Everything it needs is
+actually here". If both passed:>
+Nothing missing — a fresh clone should install and run.
+
+## What is known-broken
+<any mechanical row that failed, quoted plainly: "The code compiles — failing".
+If none failed or none ran:>
+Nothing known-broken at the time of writing.
+
+## What has no test
+<one line per Fix-this dispatched-check finding, naming whether any test file
+actually references the flagged file. If none of the dispatched checks failed:>
+Nothing flagged, so nothing to name here.
+
+## What the person actually tried
+<their answer, verbatim; otherwise:>
+Not recorded.
+
+## What Vet did not check
+Vet checks how this was built, not whether it does what was asked for. It also
+does not check visual design, mobile layout, or performance.
+```
+
+Every section is always present. An empty section says so in words rather than
+being omitted — a missing heading reads as "not applicable", while "Not
+recorded." correctly reads as "nobody knows". `What has no test` follows the
+same rule: "Nothing flagged, so nothing to name here" reads as "checked, found
+nothing to report," not as the section having been skipped.

@@ -1,9 +1,9 @@
 {
   "name": "vet",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A quality check for features built with an AI coding assistant. Run /vet before handing work to an engineer: it explains in plain language what is wrong, why it matters, and gives you text to paste straight back to your assistant.",
   "author": {
     "name": "Vet maintainers"
   },
-  "keywords": ["quality", "review", "frontend", "accessibility"]
+  "keywords": ["quality", "review", "frontend", "handoff"]
 }

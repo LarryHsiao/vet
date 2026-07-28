@@ -15,8 +15,8 @@ requires: intent                # optional — only `intent` is meaningful today
 ```
 
 - `name` is what the person reading the report sees. Write it as a plain
-  sentence ("Screens handle waiting and failure"), not a rule identifier
-  ("loading-states-check").
+  sentence ("Nothing pretends to be finished"), not a rule identifier
+  ("fake-data-check").
 - `scope` decides which target this check rides for. Most checks should ride
   both `changes` and `project` — write the body so it reads sensibly under
   either ("Inspect the target for...", not "Inspect the diff for...").
@@ -24,10 +24,10 @@ requires: intent                # optional — only `intent` is meaningful today
   collected files match — free `n/a` rows.
 - `requires: intent` marks a check that only makes sense when the person gave
   `/vet` a quoted description of what they asked for. The dispatcher drops it
-  otherwise. No shipped check declares this yet — it is reserved for a future
-  "did this match the ask" check, which cannot be built honestly without an
-  independent statement of intent (see `SKILL.md`'s design note on the fidelity
-  check, in the project's plan history, for why).
+  otherwise. No shipped check declares this today: a "did this match the ask"
+  fidelity check was considered and deliberately not built — judging intent
+  from the same artifact being judged is tautological, and intent transfers
+  fine through tickets and conversation without Vet's help.
 
 ## Body shape
 
@@ -66,12 +66,10 @@ contract requires the corresponding `[FIX]` to say explicitly not to use it. Say
 this once in the check body so the dispatched agent carries it into the fix
 text.
 
-The pattern, as used in `interactive-elements-accessible.md`:
+The pattern, as used in `everything-needed-is-here.md`:
 
-> The finding was previously flagged and has been made to "pass" by adding
-> `aria-hidden="true"`, `role="presentation"`, or an eslint-disable comment for
-> `jsx-a11y/*` rather than by fixing the element. Suppressing the warning is a
-> fail, and a worse one than the original.
+> Do not suggest deleting the import to make the error disappear, and do not
+> suggest a lint suppression — the code needs the thing it is asking for.
 
 This matters more here than in a normal linter. The person reading the report
 will paste the fix straight back to an AI assistant, and an assistant asked to
@@ -79,20 +77,42 @@ will paste the fix straight back to an AI assistant, and an assistant asked to
 it works. The next run then comes back green with the defect still shipping,
 which is worse than never having checked.
 
+## Distinguish dishonest from unfinished
+
+Not every defect this tool looks for is a pattern that's always wrong. Handing
+off half-built work is legitimate and common — the defect is a stub that
+**presents itself as finished**. When a check's subject is like that, write
+`Pass when` so a labelled stub passes on purpose: a comment naming what's
+missing (`// STUB:`), a clearly-named symbol (`SAMPLE_TEAM`), or visible UI
+text saying the data is sample. Prefer requiring a label over banning a
+pattern outright — banning hardcoded arrays outright would also catch honest,
+labelled placeholder data, and an assistant asked to "make this pass" would
+delete the label rather than finish the work, which is the opposite of what
+the check exists to encourage. See `nothing-pretends-to-be-finished.md`'s
+`Pass when`/`Fail when` split, and the `PricingCard.tsx` (unlabelled, must
+trip) / `TeamList.tsx` (labelled, must pass) pair under
+`test/fixtures/pretends-finished/` that proves it discriminates on the label,
+not on the shape.
+
 ## Adding a check: the checklist
 
 1. Write the check file under `skills/vet/checks/`.
-2. Add a matching case to `test/fixtures/broken-ui/` — a small file that should
-   trip the new check, and ideally one that should clearly pass it (see
-   `TeamList.tsx`'s role in the `no-fake-data` check: it fetches real data, so
-   it must **not** be flagged, proving the check discriminates rather than
-   pattern-matching on messiness). This path sits under a directory literally
-   named `fixtures/`, which every check's own `Do not flag` section tells it to
-   ignore — that would silently defeat the whole smoke test. `SKILL.md` Step 6
-   carries a standing "Fixture-exclusion clarification" in every check's
-   dispatch prompt for exactly this: a file whose stated purpose (a sibling
-   README, in this case) is to trip the check is evaluated as real code, not
-   exempted. Don't duplicate that clarification per check — it lives once, at
-   the protocol level.
+2. Add a matching case under its own directory in `test/fixtures/` — a small
+   file that should trip the new check, and ideally one that should clearly
+   pass it (see `PricingCard.tsx`'s and `TeamList.tsx`'s roles in the
+   `nothing-pretends-to-be-finished` check, under
+   `test/fixtures/pretends-finished/`: both are the same stub shape, but
+   `TeamList.tsx` carries a `STUB:` comment and visible "sample data" text, so
+   it must **not** be flagged, proving the check discriminates on the label
+   rather than pattern-matching on shape). The fixture directories today are
+   `test/fixtures/pretends-finished/`, `test/fixtures/missing-pieces/`, and
+   `test/fixtures/leaked-secrets/`, one per dispatched check. This path sits
+   under a directory literally named `fixtures/`, which every check's own
+   `Do not flag` section tells it to ignore — that would silently defeat the
+   whole smoke test. `SKILL.md` Step 6 carries a standing "Fixture-exclusion
+   clarification" in every check's dispatch prompt for exactly this: a file
+   whose stated purpose (a sibling README, in this case) is to trip the check
+   is evaluated as real code, not exempted. Don't duplicate that clarification
+   per check — it lives once, at the protocol level.
 3. Run the verification procedure in the project's plan history (negative
    control, positive control, `n/a` path) against the new check specifically.

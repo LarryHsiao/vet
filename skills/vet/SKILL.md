@@ -1,6 +1,6 @@
 ---
 name: vet
-description: Use when someone wants to check work an AI coding assistant built before handing it to an engineer — invoked as /vet, or in plain words such as "check my work", "is this ready to hand over", "did my assistant do this properly". Dispatches one agent per check file in parallel over the changed files, and returns a plain-language report that explains each problem and gives text to paste back to the assistant. Audit only — it never edits, commits, or pushes.
+description: Use when someone wants to check work an AI coding assistant built before handing it to an engineer — invoked as /vet, or in plain words such as "check my work", "is this ready to hand over", "did my assistant do this properly". Dispatches one agent per check file in parallel over the changed files, and returns a plain-language report that explains each problem and gives text to paste back to the assistant. Vet writes one file, which is its own — HANDOFF.md, plus .vet/ scratch — and never edits the person's source, never commits, never pushes, never installs.
 argument-hint: '[all | recent | <folder>] ["what you asked for"] [--gated]'
 allowed-tools:
   - Read
@@ -14,14 +14,17 @@ allowed-tools:
   - Bash(wc *)
   - Bash(npm run lint*)
   - Bash(npm run typecheck*)
+  - Bash(npm run build*)
+  - Bash(npm run test*)
   - Bash(npx tsc --noEmit*)
 ---
 
 # Vet
 
-Vet checks work an AI coding assistant built, before it reaches an engineer. It
-is audit only: it never edits a file, never commits, never pushes, never installs
-anything. The person reading its report is the one who built the feature, not an
+Vet checks work an AI coding assistant built, before it reaches an engineer. Vet
+writes one file, which is its own — `HANDOFF.md`, plus `.vet/` scratch. It never
+edits the person's source, never commits, never pushes, never installs. The
+person reading its report is the one who built the feature, not an
 engineer — write and render everything with that reader in mind.
 
 ## Step 1 — Read the arguments
@@ -41,6 +44,17 @@ path, treat it as the target; otherwise ignore it and note in one line that it
 wasn't understood.
 
 ## Step 2 — Work out what to check
+
+> **Project-type guard.** Check first for a `package.json` anywhere in the
+> project, excluding test/fixture directories (e.g. `test/fixtures/`) —
+> those hold deliberately-planted material for the dispatched checks to find,
+> not evidence that the project itself is JavaScript or TypeScript. If none
+> exists, Vet cannot check this project. Say so plainly and stop: "Vet only
+> understands JavaScript and TypeScript projects at the moment, and this one
+> doesn't look like either — so I haven't checked it. I'd rather tell you that
+> than give you a clean bill of health I can't back up." Never render a
+> report. A confident all-clear on a project Vet cannot read is the worst
+> output it can produce.
 
 Run, in order, stopping at the first that applies:
 
@@ -153,39 +167,48 @@ out with the check's agent and back in its reply.
 
 ## Step 5 — Run the project's own checks (optional leading rows)
 
-Only if already configured — never install anything to make one work.
+Only if already configured — never install anything to make one work. Compile,
+tests, and lint are different things, not one undifferentiated block: each of
+the three rows below resolves independently from its own source, and renders
+**only** when that source resolves.
 
-- `package.json` has a `lint` or `typecheck` script → run it.
-- No such script, but a `tsconfig.json` exists and `tsc` is reachable →
-  `npx tsc --noEmit`.
+- **`The code compiles`** resolves from a `typecheck` or `build` script in
+  `package.json`; failing that, from `npx tsc --noEmit` when a `tsconfig.json`
+  exists.
+- **`The project's tests pass`** resolves from a `test` script in
+  `package.json`.
+- **`The project's linter passes`** resolves from a `lint` script in
+  `package.json`.
 
-When a configured command can't run, the row is **never a failure** — missing
-tooling is not a defect in the feature. But whether to say anything about it
-depends entirely on whether the project has these checks set up in the first
-place:
+A row whose source doesn't resolve at all is not rendered — not even as
+"skipped." There is nothing to install and nothing to fix for that row, and a
+"skipped" row would read as a chore the person is expected to go and complete.
 
-- **The project has them set up, but they can't run** (a `lint`/`typecheck`
-  script or a `tsconfig.json` exists, and `node_modules` is missing or the
-  command isn't found) → render the row as **"Couldn't run"** and say why, in
-  one plain line, naming the command to fix it: "This project has its own lint
-  and type checks, but its dependencies aren't installed, so I couldn't run
-  them. Run `npm install` in this folder and try `/vet` again to include them."
-  Never run the install yourself — offer it and let the person decide.
+When a row's source *does* resolve but the command still can't actually run —
+`node_modules` is missing, or the command isn't found — the row is **never a
+failure**; missing tooling is not a defect in the feature. Render that row as
+**"Couldn't run"** and say why, in one plain line naming the command to fix
+it, e.g. for `The project's tests pass`: "This project has its own tests, but
+its dependencies aren't installed, so I couldn't run them. Run `npm install`
+in this folder and try `/vet` again to include them." Adapt the sentence to
+name the row in question (tests, lint, or the type/build check). Never run the
+install yourself — offer it and let the person decide.
 
-  **This is an offer, never a gate.** Everything else proceeds exactly as
-  normal: all the dispatched checks still run, and the full report still
-  renders. Declining to install is a legitimate choice, not a problem to solve
-  — if the person runs `/vet` again without installing, state the same line
-  once more, plainly, and carry on. Never nag, never escalate the wording,
-  never withhold the report, and never ask them to confirm the choice.
-- **The project has none set up** (no `lint`/`typecheck` script and no
-  `tsconfig.json`) → render no mechanical row at all and say nothing about it.
-  There is nothing to install and nothing to fix; a "skipped" row here would
-  read as a missing step the person is expected to go and correct, which it
-  isn't.
+**This is an offer, never a gate.** Everything else proceeds exactly as
+normal: all the dispatched checks still run, and the full report still
+renders. Declining to install is a legitimate choice, not a problem to solve —
+if the person runs `/vet` again without installing, state the same line once
+more, plainly, and carry on. Never nag, never escalate the wording, never
+withhold the report, and never ask them to confirm the choice.
 
-These render as leading rows, labelled "The project's own checks," above the
-dispatched checks.
+These render as leading rows, above the dispatched checks, each labelled with
+its own name — no longer grouped under one shared heading.
+
+> `The code compiles` is the direct detection of the top failure mode. Lint is
+> retained knowingly despite polish being out of scope: its output is
+> mechanically true, cannot false-positive, and rules such as `exhaustive-deps`
+> and `no-undef` catch real defects rather than style. If it proves noisy in
+> practice, this is the paragraph to revisit.
 
 ## Step 6 — Dispatch
 
@@ -382,13 +405,21 @@ Shape (full worked example in `reference/report-format.md`):
 
    Section headings below the table follow the same rule — `### <N>. <name>`,
    a period after the number, never a dash or an em-dash.
-3. `**N things to fix. M of T checks completed.**` — three distinct numbers.
-   `N` = count of **Fix this** (fail) rows. `T` = total rows in the table, every
-   check that survived Step 4's filtering, whether it was dispatched or
-   resolved by the `applies_to` shortcut. `M` = count of those rows that
-   reached a definitive result — `pass`, `fail`, or `n/a` — as opposed to
-   **Didn't finish** (`?`, an error, timeout, or unparseable reply). In the
-   ordinary case nothing times out, so `M` equals `T`.
+3. `**N things to fix. M of T checks completed.**` — three distinct numbers,
+   and both `M` and `T` count **every row on screen**, mechanical rows
+   (Step 5) included — the footer describes the table the reader is looking
+   at, not a subset of it. `N` = count of **Fix this** (fail) rows, of either
+   kind. `T` = total rows in the table: every Step 5 mechanical row that
+   rendered, plus every check that survived Step 4's filtering, whether
+   dispatched or resolved by the `applies_to` shortcut. `M` = count of those
+   rows that reached a definitive result. For a dispatched check that is
+   `pass`, `fail`, or `n/a`, as opposed to **Didn't finish** (`?`, an error,
+   timeout, or unparseable reply). A mechanical row is always definitive —
+   `Looks fine`, `Fix this`, and `Couldn't run` are each a completed
+   determination, not a stall — so every mechanical row that rendered counts
+   toward `M` too; only a dispatched check's timeout or unparseable reply
+   keeps `M` below `T`. In the ordinary case nothing times out, so `M` equals
+   `T`.
 4. One `###` section per **Fix this** row, in table order: **What's wrong**
    (the `[WHAT]` text) then a blockquote holding `[FIX]`, with no further
    label — the person will copy whatever is on screen regardless of what it is
@@ -407,6 +438,57 @@ section the same way, tracking position by what has already appeared in the
 conversation — there is no separate state file. If there is no next finding,
 say so and print item 5/6 as the close.
 
+## Step 9 — Write `HANDOFF.md`
+
+The report tells the person what to fix. `HANDOFF.md` tells the **next
+reader** — an engineer's AI, which never sees the chat — what it cannot
+reconstruct from the code. Write it to the project root after the report.
+
+**Naming test gaps.** For each dispatched check's row that resolved `fail` in
+Step 7, take the file(s) named in its `[WHAT]` text. For each such file,
+search test-shaped files (`*.test.*`, `*.spec.*`, anything under
+`__tests__/`) in the checked target for a reference to that file — an
+`import` or `require` naming its path or basename, with or without extension.
+A same-named test file that does not itself reference the flagged file does
+not count; only an actual reference does.
+
+Render one line per flagged file: if no reference was found, "`<file>`
+(flagged above for "`<check name>`"): no test file references it." If one was
+found, "`<file>` (flagged above for "`<check name>`"): covered by `<test
+file>` — worth checking whether it exercises this specific defect." If Step 7
+produced no `Fix this` rows from the dispatched checks at all, the whole
+section reads: "Nothing flagged, so nothing to name here."
+
+This never opens the matched test file to judge whether it actually exercises
+the flagged defect — that judgment is the engineer's AI's to make, not Vet's.
+Presence only.
+
+**Ask exactly one question first.** What the person actually exercised exists
+nowhere in the code, and no static check can recover it: *"Before I write the
+handoff notes — which parts of this did you actually try yourself? Anything
+you clicked through and saw working, and anything you never opened."*
+
+**This is an offer, never a gate — the same rule Step 5 applies to the install
+offer.** Write `HANDOFF.md` in this same turn regardless of what comes back.
+If an answer arrives, use it verbatim. If they decline, say nothing, or no
+answer is possible at all (a non-interactive run, or the turn simply ends),
+the "What the person actually tried" section reads exactly *"Not recorded."*
+and the file is written anyway, with a line telling them they can run `/vet`
+again and answer to fill it in. **Never** imply verification that did not
+happen, and never withhold the file waiting for a reply — a question with no
+file behind it has failed the one thing this step exists to do.
+
+This is the only question Vet asks. Everything else stays auto-detected.
+
+**Staleness.** Record the commit the file was generated against. On a later
+run, if `HANDOFF.md` exists and names a different commit, say so plainly and
+rewrite it. A handoff document describing code that has since changed misleads
+the receiver with authority — the exact failure this tool exists to prevent.
+
+**Vet writes this file and stops.** It does not commit it, does not stage it,
+does not push. Tell the person it was written and that committing it is their
+call. Vet writes one file, which is its own; it never edits their source.
+
 ## Vocabulary
 
 Never use *diff*, *HEAD*, *merge-base*, *working tree*, *staged*, *SHA*,
@@ -420,7 +502,9 @@ suggestion.
 - Dispatch is always parallel, in one message. Never sequential, never one
   check per turn (checks, not turns — `--gated` only paces the *reveal* of
   findings already computed).
-- Never edit a file, run a build, install a dependency, commit, or push.
+- Vet writes one file, which is its own — `HANDOFF.md`, plus `.vet/` scratch.
+  It never edits the person's source, never commits, never pushes, never
+  installs.
 - Never render a report with zero checks (Step 4).
 - Never mark a mechanical gate (Step 5) as a failure because tooling is absent.
 - Never rewrite a check's `[WHAT]` or `[FIX]` text (Step 7).
