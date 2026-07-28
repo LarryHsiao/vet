@@ -44,43 +44,41 @@ in wording between runs; the table must not.
 ```
 I checked the 6 files you changed but haven't saved to the project's history yet.
 
-| # | What I checked                          | Result       |
-|---|------------------------------------------|--------------|
-| 1 | Buttons and links work with a keyboard    | Fix this     |
-| 2 | Screens handle waiting and failure        | Fix this     |
-| 3 | Nothing on screen is fake data             | Looks fine   |
+| # | What I checked                              | Result       |
+|---|-----------------------------------------------|--------------|
+| 1 | Everything it needs is actually here          | Fix this     |
+| 2 | No private keys or config left in the code    | Fix this     |
+| 3 | Nothing pretends to be finished                | Looks fine   |
 
 **2 things to fix. 3 of 3 checks completed.**
 
-### 1. Buttons and links work with a keyboard
+### 1. Everything it needs is actually here
 
 **What's wrong**
-Three things that look and behave like buttons are built from plain `<div>`
-elements with an onClick handler: `PricingCard.tsx` (the "Choose plan" tile),
-`FilterBar.tsx` (the three sort chips), and `Modal.tsx` (the X in the corner).
-Nothing about them tells the browser they are buttons. Someone using a keyboard
-instead of a mouse — which includes every screen-reader user — cannot reach
-these at all. For a paid-plan selector that is a blocked purchase.
+`src/App.tsx` imports `date-fns`, which isn't listed in `package.json` — a
+fresh install won't have it — and imports `./Sidebar`, a file that doesn't
+exist anywhere in the project. Both work on the machine that built them and
+break the moment someone else clones the repo.
 
-> In src/components/PricingCard.tsx, src/components/FilterBar.tsx and
-> src/components/Modal.tsx, replace every `<div onClick={...}>` that acts as a
-> button with a real `<button type="button">` carrying the same className and
-> onClick. Do not add `role="button"` and `tabIndex={0}` to keep the div — use
-> the real element. For the X in Modal.tsx, add `aria-label="Close"` since it
-> has no text. Do not silence any lint rule to make this pass.
+> In package.json, add `date-fns` to dependencies at the version this project
+> needs. Then either create src/Sidebar.tsx with the component src/App.tsx
+> expects, or remove the import if the sidebar was never meant to ship yet. Do
+> not delete the date-fns import to make the error disappear — the code needs
+> the thing it's asking for.
 
-### 2. Screens handle waiting and failure
+### 2. No private keys or config left in the code
 
 **What's wrong**
-`TeamList.tsx` returns nothing while the team list is loading, so the screen is
-blank for however long the request takes, and the failure path is swallowed —
-`.catch(() => {})` — so a request that fails looks identical to one that is
-still loading. There is no way to tell the two apart, and no way to retry.
+`src/config.ts` hardcodes a live Stripe secret key and a database connection
+string with its password in plain text. Both are committed to the project's
+history now, and anyone with read access to the repo — including whoever reads
+this report next — can use them as-is.
 
-> In src/components/TeamList.tsx, render a loading skeleton while `members` is
-> null, and render a message with a retry button when the fetch fails instead
-> of silently catching the error. Do not remove the catch — replace it with one
-> that sets an error state the component actually renders.
+> Revoke the Stripe key referenced in src/config.ts and issue a new one; do
+> the same for the database password. Move both new values into a `.env` file
+> that's git-ignored, read them with `process.env`, and add their variable
+> names — not the values — to `.env.example`. Deleting the lines here does not
+> un-leak them; they remain reachable in the project's history until rotated.
 
 I checked how this was built, not whether it does what you asked for. To check
 that too, run `/vet "describe what you asked for"`.
@@ -91,11 +89,11 @@ that too, run `/vet "describe what you asked for"`.
 ```
 I checked the 6 files you changed but haven't saved to the project's history yet.
 
-| # | What I checked                          | Result       |
-|---|------------------------------------------|--------------|
-| 1 | Buttons and links work with a keyboard    | Looks fine   |
-| 2 | Screens handle waiting and failure        | Looks fine   |
-| 3 | Nothing on screen is fake data             | Looks fine   |
+| # | What I checked                              | Result       |
+|---|-----------------------------------------------|--------------|
+| 1 | Everything it needs is actually here          | Looks fine   |
+| 2 | No private keys or config left in the code    | Looks fine   |
+| 3 | Nothing pretends to be finished                | Looks fine   |
 
 **0 things to fix. 3 of 3 checks completed.**
 
@@ -108,11 +106,11 @@ that too, run `/vet "describe what you asked for"`.
 ```
 This project isn't tracked in Git, so I checked the whole thing.
 
-| # | What I checked                          | Result           |
-|---|------------------------------------------|------------------|
-| 1 | Buttons and links work with a keyboard    | Doesn't apply    |
-| 2 | Screens handle waiting and failure        | Didn't finish    |
-| 3 | Nothing on screen is fake data              | Doesn't apply    |
+| # | What I checked                              | Result           |
+|---|-----------------------------------------------|------------------|
+| 1 | Everything it needs is actually here          | Doesn't apply    |
+| 2 | No private keys or config left in the code    | Didn't finish    |
+| 3 | Nothing pretends to be finished                | Doesn't apply    |
 
 **0 things to fix. 2 of 3 checks completed.**
 
@@ -139,13 +137,13 @@ just the dispatched ones:
 ```
 I checked the 4 files you changed but haven't saved to the project's history yet.
 
-| # | What I checked                          | Result        |
-|---|------------------------------------------|---------------|
-| 1 | The code compiles                         | Fix this      |
-| 2 | The project's tests pass                  | Couldn't run  |
-| 3 | The project's linter passes               | Looks fine    |
-| 4 | Buttons and links work with a keyboard    | Looks fine    |
-| 5 | Screens handle waiting and failure        | Didn't finish |
+| # | What I checked                              | Result        |
+|---|-----------------------------------------------|---------------|
+| 1 | The code compiles                             | Fix this      |
+| 2 | The project's tests pass                      | Couldn't run  |
+| 3 | The project's linter passes                    | Looks fine    |
+| 4 | Everything it needs is actually here          | Looks fine    |
+| 5 | No private keys or config left in the code    | Didn't finish |
 
 **1 thing to fix. 4 of 5 checks completed.**
 
@@ -192,15 +190,15 @@ the first **Fix this** section follows:
 ```
 I checked the 6 files you changed but haven't saved to the project's history yet.
 
-| # | What I checked                          | Result       |
-|---|------------------------------------------|--------------|
-| 1 | Buttons and links work with a keyboard    | Fix this     |
-| 2 | Screens handle waiting and failure        | Fix this     |
-| 3 | Nothing on screen is fake data             | Looks fine   |
+| # | What I checked                              | Result       |
+|---|-----------------------------------------------|--------------|
+| 1 | Everything it needs is actually here          | Fix this     |
+| 2 | No private keys or config left in the code    | Fix this     |
+| 3 | Nothing pretends to be finished                | Looks fine   |
 
 **2 things to fix. 3 of 3 checks completed.**
 
-### 1. Buttons and links work with a keyboard
+### 1. Everything it needs is actually here
 
 **What's wrong**
 ... (identical to the batch example above)

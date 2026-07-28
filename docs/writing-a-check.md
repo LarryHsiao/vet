@@ -15,8 +15,8 @@ requires: intent                # optional — only `intent` is meaningful today
 ```
 
 - `name` is what the person reading the report sees. Write it as a plain
-  sentence ("Screens handle waiting and failure"), not a rule identifier
-  ("loading-states-check").
+  sentence ("Nothing pretends to be finished"), not a rule identifier
+  ("fake-data-check").
 - `scope` decides which target this check rides for. Most checks should ride
   both `changes` and `project` — write the body so it reads sensibly under
   either ("Inspect the target for...", not "Inspect the diff for...").

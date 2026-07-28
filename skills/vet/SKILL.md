@@ -1,6 +1,6 @@
 ---
 name: vet
-description: Use when someone wants to check work an AI coding assistant built before handing it to an engineer — invoked as /vet, or in plain words such as "check my work", "is this ready to hand over", "did my assistant do this properly". Dispatches one agent per check file in parallel over the changed files, and returns a plain-language report that explains each problem and gives text to paste back to the assistant. Audit only — it never edits, commits, or pushes.
+description: Use when someone wants to check work an AI coding assistant built before handing it to an engineer — invoked as /vet, or in plain words such as "check my work", "is this ready to hand over", "did my assistant do this properly". Dispatches one agent per check file in parallel over the changed files, and returns a plain-language report that explains each problem and gives text to paste back to the assistant. Vet writes one file, which is its own — HANDOFF.md, plus .vet/ scratch — and never edits the person's source, never commits, never pushes, never installs.
 argument-hint: '[all | recent | <folder>] ["what you asked for"] [--gated]'
 allowed-tools:
   - Read

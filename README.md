@@ -117,10 +117,17 @@ See `docs/writing-a-check.md`.
 
 ## Note
 
-Running `/vet all` inside this repo will flag `test/fixtures/pretends-finished/`,
-`test/fixtures/missing-pieces/`, and `test/fixtures/leaked-secrets/`. That's
-intentional — those files are broken on purpose, as the fastest available smoke
-test for the tool itself.
+This repo has no root `package.json`, so it isn't itself a JavaScript or
+TypeScript project — running `/vet` here trips the project-type guard and
+refuses, rather than checking anything. The fixtures under
+`test/fixtures/pretends-finished/`, `test/fixtures/missing-pieces/`, and
+`test/fixtures/leaked-secrets/` are exercised instead by copying them into a
+separate scratch project — see `docs/writing-a-check.md`.
+
+`docs/superpowers/plans/2026-07-27-handoff-integrity.md` is a fourth,
+deliberate trip-point for the secrets check: it quotes the same fake key
+shapes inline and is left unredacted on purpose — editing the record to pass
+the tool it specifies would be bending verification to fit.
 
 ## Local development
 

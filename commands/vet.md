@@ -1,7 +1,21 @@
 ---
 description: Check a feature an AI assistant built, before handing it to an engineer
 argument-hint: '[all | recent | <folder>] ["what you asked for"] [--gated]'
-allowed-tools: [Read, Glob, Grep, Bash, Agent, AskUserQuestion]
+allowed-tools:
+  - Read
+  - Glob
+  - Grep
+  - Agent
+  - AskUserQuestion
+  - Write
+  - Bash(git *)
+  - Bash(ls *)
+  - Bash(wc *)
+  - Bash(npm run lint*)
+  - Bash(npm run typecheck*)
+  - Bash(npm run build*)
+  - Bash(npm run test*)
+  - Bash(npx tsc --noEmit*)
 ---
 
 Run the Vet quality check.
