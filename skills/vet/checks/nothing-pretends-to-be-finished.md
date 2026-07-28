@@ -1,7 +1,7 @@
 ---
 name: Nothing pretends to be finished
 scope: [changes, project]
-applies_to: ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.ts", "**/*.js"]
+applies_to: ["**/*.tsx", "**/*.jsx", "**/*.vue", "**/*.svelte", "**/*.ts", "**/*.js", "**/*.dart", "**/*.go"]
 ---
 
 When an assistant builds a screen it invents the data to fill it, so the screen
@@ -16,7 +16,9 @@ and common. The defect is a stub that **presents itself as finished**. A stub
 that says what it is costs the receiver nothing; an unlabelled one misleads them.
 
 Inspect the target for anything that would read as working to someone who did
-not build it.
+not build it. Use the subsection below matching the file's language.
+
+## JavaScript/TypeScript
 
 **Pass when**
 
@@ -72,7 +74,93 @@ not build it.
 - More than three instances. Name the three most visible on screen and count the
   rest.
 
-On fail, the `[FIX]` must offer **both** routes, because either is legitimate:
-wire it to the real source, **or** label it honestly and say so in the handoff.
-State explicitly that deleting the visible text, hiding the control, or adding a
-lint suppression does not count — the receiver must be able to tell what is real.
+## Dart/Flutter
+
+**Pass when**
+
+- Widget data comes from a real source: a constructor parameter, `State` fed by
+  a `Future`/`Stream`, a `Provider`/`Riverpod`/`Bloc`/`Cubit` value, a
+  repository or API call.
+- Sample data, stub handlers and placeholder assets are **labelled** — a
+  comment naming what is missing (`// STUB:`, `// TODO: connect to the real
+  endpoint`), a clearly-named symbol (`sampleTeam`, `kPlaceholderAvatar`), or
+  visible UI text saying the data is sample.
+- Controls do something, or say that they do not.
+
+**Fail when**
+
+- A widget defines realistic-looking records inline and renders them with no
+  `Future`/`Stream`/provider call anywhere in the widget or its ancestors, and
+  nothing marks them as sample.
+- A metric, count, or badge is a literal string in the build method — a
+  `"+12% this month"` — with no note that it is invented.
+- Placeholder media is wired in as if real: a `NetworkImage` or
+  `Image.network` pointing at `via.placeholder.com`, `picsum.photos`,
+  `i.pravatar.cc`, or similar.
+- A control is wired to nothing and does not say so: `onPressed: () {}`,
+  `onPressed: () => print(...)`, an `onTap` with no observable effect.
+- A `Future`/`Stream` is created but its result is discarded and hardcoded
+  values render anyway.
+
+**Do not flag**
+
+- Anything carrying an honest label, per *Pass when*.
+- Generated files: `*.g.dart`, `*.freezed.dart`, and anything under
+  `.dart_tool/` or `build/`.
+- Tests and anything under `test/`, `test_driver/`, `integration_test/`.
+- Genuine static content: route tables, theme tokens, l10n/`.arb` catalogues,
+  validation messages, enum-backed labels.
+- Empty-state and skeleton/shimmer loading widgets — a loading state, not fake
+  data.
+- Defaults and fallbacks: `?? 0`, `?? []`, a default avatar asset shipped with
+  the app.
+- Pre-existing unlabelled data in files this change merely touched, when the
+  scope is `changes`.
+- More than three instances. Name the three most visible on screen and count
+  the rest.
+
+## Go
+
+**Pass when**
+
+- Handler or response values come from a real source: a database query, an
+  external service call, a request body, a config value.
+- Sample data and stub handlers are **labelled** — a `// STUB:`/`// TODO:`
+  comment or a clearly-named identifier (`sampleUsers`, `mockResponse`).
+- An unimplemented handler returns an honest "not implemented" response
+  (`http.StatusNotImplemented`, or an explicit `errors.New("not implemented")`)
+  rather than silently returning empty or fake success data.
+
+**Fail when**
+
+- A handler returns a literal struct or JSON value with no call to a database,
+  repository, or external service anywhere in its call path, and nothing marks
+  it as a stub.
+- A function whose name and signature promise real work (`FetchUser`,
+  `GetOrders`) unconditionally returns a hardcoded value.
+- A metric or count is a literal in the response path with no note that it is
+  invented.
+- A handler always returns success with empty or default data regardless of
+  input, instead of performing or reporting the real operation.
+
+**Do not flag**
+
+- Anything carrying an honest label, per *Pass when*, including a handler that
+  returns `http.StatusNotImplemented`.
+- Generated files: `*_gen.go`, `*.pb.go`, and anything carrying a `// Code
+  generated ... DO NOT EDIT.` header.
+- Test files (`_test.go`) and anything under `testdata/`.
+- Genuine static content: constant lookup tables, error message strings,
+  documented config defaults.
+- Pre-existing unlabelled data in files this change merely touched, when the
+  scope is `changes`.
+- More than three instances. Name the three clearest and count the rest.
+
+## On fail
+
+The `[FIX]` must offer **both** routes, because either is legitimate: wire it
+to the real source, **or** label it honestly and say so in the handoff. For a
+Go handler, an honest `http.StatusNotImplemented` response already counts as
+the labelling route. State explicitly that deleting the visible text, hiding
+the control, or adding a lint suppression does not count — the receiver must
+be able to tell what is real.
