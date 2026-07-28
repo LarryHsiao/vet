@@ -918,3 +918,50 @@ Carried from the spec, deliberately:
 1. **Nothing triggers Vet.** Accepted with the skill-only decision.
 2. **Secrets already in git history.** Task 3 inspects the working tree only, so a `.env` committed and later deleted still reports clean. Closing it costs one `git log --diff-filter=A` over `.env`-shaped paths — a good follow-up.
 3. **Nothing verifies a fix landed.** A green second run remains indistinguishable from a suppression.
+
+---
+
+## Outstanding at handoff (2026-07-28)
+
+All 6 tasks are complete and committed. The final whole-branch review returned
+**"merge after four fixes"**. None are started — a fix-wave agent stalled before
+editing anything. The SDD ledger is gitignored and does not travel; this section
+is the record.
+
+| # | Severity | File | What |
+|---|---|---|---|
+| 1 | **Critical** | `commands/vet.md:4` | `allowed-tools` lacks `Write`. This is the entry point every README instruction names, and Step 9 writes `HANDOFF.md` on every run. Also narrow its unrestricted `Bash` to match `SKILL.md`'s nine specific forms. |
+| 2 | Important | `skills/vet/SKILL.md:3` | Frontmatter `description` still ends "Audit only — it never edits, commits, or pushes." Replace with the restated promise already at lines 24-27: Vet writes one file, which is its own. |
+| 3 | Important | `README.md:118-123` | Claims `/vet all` works in this repo. It does not — Task 4's project-type guard correctly refuses, since Vet is not itself a JS project. Say fixtures are exercised by copying into a scratch project, and name the plan doc as a 4th deliberate secrets trip-point. |
+| 4 | Important | `skills/vet/reference/report-format.md` | 17 references to the three deleted checks across 5 worked-example tables. Repoint onto the current names. **Footer arithmetic is already correct — change no numbers.** |
+
+### Why #1 survived six rounds of review
+
+**Not one verification on this branch ran `/vet`.** Every live run used
+`claude -p "Use the vet skill…"` with a hand-written `--allowedTools` that
+happened to include `Write`, so the command entry point was never exercised.
+When fixing #1, verify through `/vet` itself — if it will not resolve in `-p`
+mode, report that honestly rather than substituting the `claude -p` form.
+
+### Root cause the reviewer named
+
+Late-in-task decisions were not walked back through files earlier tasks had
+already closed. Four of the final findings are that one pattern, plus a banned-
+wording regression caught mid-flight. When fixing any of the above, grep for the
+same wording elsewhere before calling it done.
+
+### Rulings that stand — do not revisit
+
+- **Guard exclusion ships as-is.** A wrong refusal is loud and recoverable; a
+  wrong pass is silent, and a confident false all-clear is the worst output this
+  tool can produce.
+- **The plan document is not redacted.** This repo can never pass its own secrets
+  check by design — the fixtures exist to trip it. Editing the record to satisfy
+  the tool it specifies is bending verification to fit.
+
+### Environment traps
+
+- Nested `claude -p` hangs for minutes unless `--strict-mcp-config` is passed.
+  This produced three 0-byte "verification" files before it was diagnosed.
+- Installed plugins are cache snapshots. `plugin update` only refreshes on a
+  version bump; during development use uninstall + install.
