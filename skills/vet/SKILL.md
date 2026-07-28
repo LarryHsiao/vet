@@ -463,6 +463,21 @@ This never opens the matched test file to judge whether it actually exercises
 the flagged defect — that judgment is the engineer's AI's to make, not Vet's.
 Presence only.
 
+**When `TARGET_KIND` is `changes`**, also consider every file in Step 2's
+collected changes matching the dispatched checks' source extensions
+(`**/*.tsx`, `**/*.jsx`, `**/*.ts`, `**/*.js`, `**/*.vue`, `**/*.svelte`),
+excluding test/story/fixture/mock files by the same names used throughout the
+checks. Skip any file already named in the flagged-file part above — it is
+not named twice.
+
+For each remaining touched file, run the same reference search as above. If
+no test file references it, add it to a second list within the same section.
+Name at most three; beyond that, "and N more of the same kind." If every
+touched file is either already named above, has a test, or there are none to
+consider (including whenever `TARGET_KIND` is `project`), that second list is
+simply absent — the section reads exactly as it would without this
+paragraph in that case.
+
 **Ask exactly one question first.** What the person actually exercised exists
 nowhere in the code, and no static check can recover it: *"Before I write the
 handoff notes — which parts of this did you actually try yourself? Anything
