@@ -654,7 +654,7 @@ nothing rendered.
    — say nothing further. On **yes**:
    - `github`: `gh pr create --assignee @me --fill --body "<body>"`
    - `gitlab`: `TITLE="$(git log -1 --format=%s)" && glab mr create --assignee
-     "$(glab api user --jq .username)" --title "$TITLE" --body "<body>"`
+     "$(glab api user --jq .username)" --title "$TITLE" --description "<body>"`
    - `--fill` takes the title from the latest commit's subject directly, but
      the two forge CLIs' `--fill` are not equivalent. `gh pr create --fill`
      is safe — it does not push as a side effect. `glab mr create --fill` is
