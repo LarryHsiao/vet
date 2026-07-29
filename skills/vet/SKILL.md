@@ -26,6 +26,11 @@ allowed-tools:
   - Bash(go test*)
   - Bash(golangci-lint run*)
   - Bash(command -v golangci-lint*)
+  - Bash(gh pr create*)
+  - Bash(gh pr list*)
+  - Bash(glab mr create*)
+  - Bash(glab mr list*)
+  - Bash(glab api*)
 ---
 
 # Vet
@@ -600,7 +605,9 @@ again and answer to fill it in. **Never** imply verification that did not
 happen, and never withhold the file waiting for a reply — a question with no
 file behind it has failed the one thing this step exists to do.
 
-This is the only question Vet asks. Everything else stays auto-detected.
+This is the only question Step 9 asks. Step 10 may ask one more — but only
+when the report came back fully clear, and only about opening a PR/MR.
+Everything else stays auto-detected.
 
 **Staleness.** Record the commit the file was generated against. On a later
 run, if `HANDOFF.md` exists and names a different commit, say so plainly and
@@ -610,6 +617,44 @@ the receiver with authority — the exact failure this tool exists to prevent.
 **Vet writes this file and stops.** It does not commit it, does not stage it,
 does not push. Tell the person it was written and that committing it is their
 call. Vet writes one file, which is its own; it never edits their source.
+
+## Step 10 — Offer to open the PR/MR (only when clear)
+
+Only when Step 8's table held zero **Fix this** rows — the same condition
+that suppressed the hold verdict there. Skip this step entirely otherwise:
+no question, no mention of it, nothing rendered.
+
+1. **Find the forge.** Read the `origin` remote: `git remote get-url origin`.
+   A URL containing `github.com` → `github`. A URL containing `gitlab.com`, or
+   any other GitLab host reachable the same way (match on `gitlab` in the
+   hostname) → `gitlab`. Neither matches, or there is no `origin` remote at
+   all → skip this step silently; there is nothing to open a PR/MR against.
+2. **Confirm the branch is pushed.** `git rev-parse --abbrev-ref @{u}` — if it
+   fails, the branch has no upstream. Vet never pushes on its own, so say so
+   plainly and stop, without asking anything: "This looks ready to hand off,
+   but the branch isn't pushed yet. Push it yourself, then run `/vet` again
+   and I'll offer to open the PR."
+3. **Check for an existing PR/MR.** `gh pr list --head <branch> --state all
+   --json url` (github) or `glab mr list --source-branch <branch>` (gitlab).
+   If one is already open, merged, or closed for this branch, say so and give
+   its URL. Stop here; never open a duplicate.
+4. **Ask.** `AskUserQuestion`, once: open a PR/MR now, or not. On **no**, stop
+   — say nothing further. On **yes**:
+   - `github`: `gh pr create --assignee @me --title "<title>" --body
+     "<body>"`
+   - `gitlab`: `glab mr create --assignee "$(glab api user --jq .username)"
+     --title "<title>" --body "<body>"`
+   - `<title>` is the latest commit's subject: `git log -1 --format=%s`.
+   - `<body>` is exactly: `Opened by /vet after a clean check. See HANDOFF.md
+     for handoff notes.`
+   - The person running Vet is the author, so they're the assignee — the same
+     convention every self-assigned PR/MR in this project's workflow follows.
+   Relay the forge's own confirmation (the PR/MR URL) once it returns.
+
+This is the only forge-mutating action Vet ever takes, and it happens only
+behind this explicit, one-time confirm — never as a side effect of anything
+else in this file. It still never runs `git push`; step 2 above refuses
+outright rather than pushing on the person's behalf.
 
 ## Vocabulary
 
