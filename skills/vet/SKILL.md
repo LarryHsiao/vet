@@ -1,6 +1,6 @@
 ---
 name: vet
-description: Use when someone wants to check work an AI coding assistant built before handing it to an engineer — invoked as /vet, or in plain words such as "check my work", "is this ready to hand over", "did my assistant do this properly". Dispatches one agent per check file in parallel over the changed files, and returns a plain-language report that explains each problem and gives text to paste back to the assistant. Vet writes one file, which is its own — HANDOFF.md, plus .vet/ scratch — and never edits the person's source, never commits, never pushes, never installs.
+description: Use when someone wants to check work an AI coding assistant built before handing it to an engineer — invoked as /vet, or in plain words such as "check my work", "is this ready to hand over", "did my assistant do this properly". Dispatches one agent per check file in parallel over the changed files, and returns a plain-language report that explains each problem and gives text to paste back to the assistant, leading with a Hold verdict when anything needs fixing. Vet writes one file, which is its own — HANDOFF.md, plus .vet/ scratch — and never edits the person's source, never commits, never pushes, never installs. When every check comes back clear, it may also ask whether to open a PR/MR for an already-pushed branch — the one other action it ever takes, gated behind an explicit yes.
 argument-hint: '[all | recent | <folder>] ["what you asked for"] [--gated]'
 allowed-tools:
   - Read
@@ -37,9 +37,12 @@ allowed-tools:
 
 Vet checks work an AI coding assistant built, before it reaches an engineer. Vet
 writes one file, which is its own — `HANDOFF.md`, plus `.vet/` scratch. It never
-edits the person's source, never commits, never pushes, never installs. The
-person reading its report is the one who built the feature, not an
-engineer — write and render everything with that reader in mind.
+edits the person's source, never commits, never pushes, never installs. When
+the report comes back fully clear, it may also ask whether to open a PR/MR for
+a branch that's already pushed (Step 10) — the one other action it ever takes,
+and only behind an explicit yes. The person reading its report is the one who
+built the feature, not an engineer — write and render everything with that
+reader in mind.
 
 ## Step 1 — Read the arguments
 
@@ -672,6 +675,13 @@ suggestion.
 - Vet writes one file, which is its own — `HANDOFF.md`, plus `.vet/` scratch.
   It never edits the person's source, never commits, never pushes, never
   installs.
+- Any **Fix this** row — mechanical or dispatched — earns a Hold verdict as
+  the first line of the report (Step 8). It's a signal, not an enforced gate:
+  Vet cannot block a merge, it can only say plainly not to make one yet.
+- The one action Vet takes beyond writing files and asking questions: when the
+  report comes back fully clear, it may open a PR/MR (Step 10) — never
+  silently, only behind an explicit yes, only against a branch already pushed
+  by the person, and only after checking one doesn't already exist.
 - Never render a report with zero checks (Step 4).
 - Never mark a mechanical gate (Step 5) as a failure because tooling is absent.
 - Never rewrite a check's `[WHAT]` or `[FIX]` text (Step 7).
