@@ -106,9 +106,11 @@ I checked how this was built, not whether it does what you asked for. To check
 that too, run `/vet "describe what you asked for"`.
 ```
 
-Zero **Fix this** rows means no hold line — and it's also what triggers
-Step 10's offer to open a PR/MR (SKILL.md), asked only after this report and
-`HANDOFF.md` are both written.
+Zero **Fix this** rows means no hold line. Step 10's offer to open a PR/MR
+(SKILL.md) needs one more thing beyond that — every row must also have
+reached a definitive result, with no **Didn't finish** row (`M == T`) — and
+this example qualifies on both counts, so it's also what triggers that offer,
+asked only after this report and `HANDOFF.md` are both written.
 
 ## Edge cases
 

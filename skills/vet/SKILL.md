@@ -30,7 +30,7 @@ allowed-tools:
   - Bash(gh pr list*)
   - Bash(glab mr create*)
   - Bash(glab mr list*)
-  - Bash(glab api*)
+  - Bash(glab api user*)
 ---
 
 # Vet
@@ -251,8 +251,14 @@ silently missing a regression in a file the diff didn't touch but broke.
   `package.json` — that script's presence still gates whether this row
   renders at all. **When `TARGET_KIND` is `project`**, run that script
   unchanged. **When `TARGET_KIND` is `changes`**, don't run the configured
-  script — invoke the linter directly against the collected files instead:
-  `npx eslint <files>`.
+  script — invoke the linter directly against the collected files instead,
+  but only when there is actual evidence the project's linter *is* ESLint:
+  an `eslint` entry in `package.json`'s dependencies/devDependencies, or an
+  `eslint.config.*`/`.eslintrc*` file at the project root. When that
+  evidence is present, run `npx eslint <files>`. When it isn't — the `lint`
+  script could wrap Biome, oxlint, or anything else — fall back to running
+  the configured whole-project `lint` script instead, same as the
+  `project`-target behavior above.
 
 **`PROJECT_ECOSYSTEM` is `dart`** (`DART_CLI` fixed in Step 2):
 
@@ -617,15 +623,18 @@ run, if `HANDOFF.md` exists and names a different commit, say so plainly and
 rewrite it. A handoff document describing code that has since changed misleads
 the receiver with authority — the exact failure this tool exists to prevent.
 
-**Vet writes this file and stops.** It does not commit it, does not stage it,
-does not push. Tell the person it was written and that committing it is their
-call. Vet writes one file, which is its own; it never edits their source.
+**Vet writes this file, and does not commit it, stage it, or push it.** Tell
+the person it was written and that committing it is their call. Vet writes one
+file, which is its own; it never edits their source.
 
 ## Step 10 — Offer to open the PR/MR (only when clear)
 
-Only when Step 8's table held zero **Fix this** rows — the same condition
-that suppressed the hold verdict there. Skip this step entirely otherwise:
-no question, no mention of it, nothing rendered.
+Only when Step 8's table held zero **Fix this** rows, and every row reached a
+definitive result — no **Didn't finish** row either (`M == T` in Step 8 item
+3's own footer terms). A **Didn't finish** row means a check never actually
+answered, so the report is not fully clear even though nothing failed
+outright. Skip this step entirely otherwise: no question, no mention of it,
+nothing rendered.
 
 1. **Find the forge.** Read the `origin` remote: `git remote get-url origin`.
    A URL containing `github.com` → `github`. A URL containing `gitlab.com`, or
@@ -643,13 +652,20 @@ no question, no mention of it, nothing rendered.
    its URL. Stop here; never open a duplicate.
 4. **Ask.** `AskUserQuestion`, once: open a PR/MR now, or not. On **no**, stop
    — say nothing further. On **yes**:
-   - `github`: `gh pr create --assignee @me --title "<title>" --body
-     "<body>"`
+   - `github`: `gh pr create --assignee @me --fill --body "<body>"`
    - `gitlab`: `glab mr create --assignee "$(glab api user --jq .username)"
-     --title "<title>" --body "<body>"`
-   - `<title>` is the latest commit's subject: `git log -1 --format=%s`.
+     --fill --body "<body>"`
+   - `--fill` takes the title from the latest commit's subject directly —
+     never build a `<title>` value yourself and interpolate it into the
+     command. A commit subject is text an AI assistant wrote and Vet does not
+     control; round-tripping it through Vet's own shell command construction
+     (e.g. `--title "$(git log -1 --format=%s)"`) risks the shell evaluating
+     something like `$(...)` or a backtick inside it. `--fill` sidesteps this
+     entirely by having the forge CLI read the commit itself.
    - `<body>` is exactly: `Opened by /vet after a clean check. See HANDOFF.md
-     for handoff notes.`
+     for handoff notes.` — a fixed literal with no interpolation risk, passed
+     explicitly so it overrides what `--fill` would otherwise draw from the
+     commit body.
    - The person running Vet is the author, so they're the assignee — the same
      convention every self-assigned PR/MR in this project's workflow follows.
    Relay the forge's own confirmation (the PR/MR URL) once it returns.
