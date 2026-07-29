@@ -653,15 +653,24 @@ nothing rendered.
 4. **Ask.** `AskUserQuestion`, once: open a PR/MR now, or not. On **no**, stop
    — say nothing further. On **yes**:
    - `github`: `gh pr create --assignee @me --fill --body "<body>"`
-   - `gitlab`: `glab mr create --assignee "$(glab api user --jq .username)"
-     --fill --body "<body>"`
-   - `--fill` takes the title from the latest commit's subject directly —
-     never build a `<title>` value yourself and interpolate it into the
-     command. A commit subject is text an AI assistant wrote and Vet does not
-     control; round-tripping it through Vet's own shell command construction
-     (e.g. `--title "$(git log -1 --format=%s)"`) risks the shell evaluating
-     something like `$(...)` or a backtick inside it. `--fill` sidesteps this
-     entirely by having the forge CLI read the commit itself.
+   - `gitlab`: `TITLE="$(git log -1 --format=%s)" && glab mr create --assignee
+     "$(glab api user --jq .username)" --title "$TITLE" --body "<body>"`
+   - `--fill` takes the title from the latest commit's subject directly, but
+     the two forge CLIs' `--fill` are not equivalent. `gh pr create --fill`
+     is safe — it does not push as a side effect. `glab mr create --fill` is
+     not: per `glab`'s own `--help`, `-f, --fill` "Sets `push` to `true`, and
+     pushes the branch." Passing it would silently violate Vet's "never
+     pushes" invariant, so `--fill` is never used for `gitlab`.
+   - For `gitlab`, never build a `<title>` value yourself and interpolate it
+     directly into the command. A commit subject is text an AI assistant
+     wrote and Vet does not control; splicing it raw into a command string
+     (e.g. writing `--title "$(git log -1 --format=%s)"` straight into the
+     assembled command) risks the shell evaluating something like `$(...)`
+     or a backtick inside it. Capturing it into `$TITLE` first, in its own
+     assignment, then expanding `--title "$TITLE"` sidesteps this: the
+     variable is substituted as one literal argument, with no second pass of
+     shell evaluation over the commit subject's contents — and unlike
+     `--fill`, it never sets `push` to `true`.
    - `<body>` is exactly: `Opened by /vet after a clean check. See HANDOFF.md
      for handoff notes.` — a fixed literal with no interpolation risk, passed
      explicitly so it overrides what `--fill` would otherwise draw from the
