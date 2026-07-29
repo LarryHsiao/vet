@@ -41,7 +41,12 @@ in wording between runs; the table must not.
 
 ## Default (batch) report
 
+Any **Fix this** row — mechanical or dispatched — earns a hold verdict as the
+very first line, before `TARGET_SENTENCE`:
+
 ```
+> **Hold — 2 things need fixing before this is ready to hand off.**
+
 I checked the 6 files you changed but haven't saved to the project's history yet.
 
 | # | What I checked                              | Result       |
@@ -101,6 +106,10 @@ I checked how this was built, not whether it does what you asked for. To check
 that too, run `/vet "describe what you asked for"`.
 ```
 
+Zero **Fix this** rows means no hold line — and it's also what triggers
+Step 10's offer to open a PR/MR (SKILL.md), asked only after this report and
+`HANDOFF.md` are both written.
+
 ## Edge cases
 
 ```
@@ -135,6 +144,8 @@ they count in the same footer — `T` and `M` describe every row on screen, not
 just the dispatched ones:
 
 ```
+> **Hold — 1 thing needs fixing before this is ready to hand off.**
+
 I checked the 4 files you changed but haven't saved to the project's history yet.
 
 | # | What I checked                              | Result        |
@@ -188,6 +199,8 @@ The table and count render immediately — the whole picture, up front — but o
 the first **Fix this** section follows:
 
 ```
+> **Hold — 2 things need fixing before this is ready to hand off.**
+
 I checked the 6 files you changed but haven't saved to the project's history yet.
 
 | # | What I checked                              | Result       |

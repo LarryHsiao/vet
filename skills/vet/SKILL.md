@@ -477,7 +477,22 @@ Status → presentation: `pass` → **Looks fine**. `fail` → **Fix this**. `n/
 
 Shape (full worked example in `reference/report-format.md`):
 
-1. `TARGET_SENTENCE` as the opening line.
+**Verdict-first line.** Before anything else — before `TARGET_SENTENCE` —
+check whether the table about to be rendered holds at least one **Fix this**
+row: a dispatched check that resolved `fail`, or a mechanical Step 5 row that
+resolved `Fix this`. A mechanical `Couldn't run` never counts — missing
+tooling is not a defect. If at least one does, render this as its own
+paragraph, before anything else: `> **Hold — N thing(s) need fixing before
+this is ready to hand off.**`, where `N` is the same count item 3 below
+computes for the footer, rendered singular when `N` is 1 ("1 thing needs
+fixing") exactly the way item 3's own footer already does ("1 thing to fix"
+vs "N things to fix"). This applies in both the default and `--gated`
+shapes — it's part of the whole-picture render that happens up front either
+way. Render nothing here when the table is fully clear; item 3's footer, and
+Step 10's offer, carry that case instead.
+
+1. `TARGET_SENTENCE` as the opening line — the line right after the hold
+   verdict when one rendered, otherwise the true first line.
 2. The table: `| # | What I checked | Result |`, in check-number order,
    including any Step 5 mechanical rows first.
 
