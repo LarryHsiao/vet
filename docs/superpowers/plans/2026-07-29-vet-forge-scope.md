@@ -322,7 +322,6 @@ Find, at the end of the `## All-clear` fenced block:
 I checked how this was built, not whether it does what you asked for. To check
 that too, run `/vet "describe what you asked for"`.
 ```
-```
 
 (the closing fence right after that line, within the All-clear section specifically — there are two such identical sentences in the file; edit only the one inside `## All-clear`, which is the block containing `**0 things to fix. 3 of 3 checks completed.**` directly above it.)
 
