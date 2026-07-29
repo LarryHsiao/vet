@@ -1,0 +1,1 @@
+String buildFooter() => 'fixture footer';

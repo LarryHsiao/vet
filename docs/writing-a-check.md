@@ -43,6 +43,16 @@ Four parts, in order:
    `aria-hidden` slapped on to silence a warning) counts as a failure, not a fix.
 4. **`Do not flag`** — the exclusion list.
 
+This four-part shape assumes one rule for the whole check. When the rule
+itself differs by language — what counts as a resolvable import, what
+"finished" looks like — split the body after the shared rationale instead:
+one `##`-level subsection per supported language (JavaScript/TypeScript,
+Dart/Flutter, Go), each carrying its own `Pass when`/`Fail when`/`Do not flag`,
+closed by one shared `## On fail` section covering all of them.
+`everything-needed-is-here.md` is the worked example. A check whose rule
+doesn't vary by language — the secrets check, say — keeps the single flat
+shape above.
+
 **`Do not flag` should be the longest section, and this is deliberate.** A PM
 cannot distinguish a false positive from a real finding — they will trust
 whatever the report says. One bad row poisons trust in the entire report, not
@@ -105,8 +115,13 @@ not on the shape.
    `TeamList.tsx` carries a `STUB:` comment and visible "sample data" text, so
    it must **not** be flagged, proving the check discriminates on the label
    rather than pattern-matching on shape). The fixture directories today are
-   `test/fixtures/pretends-finished/`, `test/fixtures/missing-pieces/`, and
-   `test/fixtures/leaked-secrets/`, one per dispatched check. This path sits
+   `test/fixtures/pretends-finished/`, `test/fixtures/pretends-finished-dart/`,
+   and `test/fixtures/pretends-finished-go/`; `test/fixtures/missing-pieces/`,
+   `test/fixtures/missing-pieces-dart/`, and `test/fixtures/missing-pieces-go/`;
+   and `test/fixtures/leaked-secrets/`. The two file-scoped checks
+   (`nothing-pretends-to-be-finished`, `everything-needed-is-here`) each carry
+   one fixture directory per supported language; the secrets check has only
+   the one, since its rule doesn't branch by language. This path sits
    under a directory literally named `fixtures/`, which every check's own
    `Do not flag` section tells it to ignore — that would silently defeat the
    whole smoke test. `SKILL.md` Step 6 carries a standing "Fixture-exclusion

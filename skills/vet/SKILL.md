@@ -17,6 +17,14 @@ allowed-tools:
   - Bash(npm run build*)
   - Bash(npm run test*)
   - Bash(npx tsc --noEmit*)
+  - Bash(dart analyze*)
+  - Bash(flutter analyze*)
+  - Bash(dart test*)
+  - Bash(flutter test*)
+  - Bash(go build*)
+  - Bash(go test*)
+  - Bash(golangci-lint run*)
+  - Bash(command -v golangci-lint*)
 ---
 
 # Vet
@@ -45,16 +53,35 @@ wasn't understood.
 
 ## Step 2 — Work out what to check
 
-> **Project-type guard.** Check first for a `package.json` anywhere in the
-> project, excluding test/fixture directories (e.g. `test/fixtures/`) —
-> those hold deliberately-planted material for the dispatched checks to find,
-> not evidence that the project itself is JavaScript or TypeScript. If none
-> exists, Vet cannot check this project. Say so plainly and stop: "Vet only
-> understands JavaScript and TypeScript projects at the moment, and this one
-> doesn't look like either — so I haven't checked it. I'd rather tell you that
-> than give you a clean bill of health I can't back up." Never render a
-> report. A confident all-clear on a project Vet cannot read is the worst
-> output it can produce.
+> **Project-type guard.** Check first for a `package.json`, `pubspec.yaml`, or
+> `go.mod` anywhere in the project, excluding test/fixture directories (e.g.
+> `test/fixtures/`) — those hold deliberately-planted material for the
+> dispatched checks to find, not evidence that the project itself belongs to
+> that ecosystem.
+>
+> **More than one manifest type found** (e.g. a `pubspec.yaml` under `mobile/`
+> and a `go.mod` under `server/` in the same tree) → stop before checking
+> anything. Call `AskUserQuestion` once, offering each manifest's containing
+> folder as a candidate target — no "check everything anyway" option here,
+> unlike the whole-project size gate below, because each ecosystem needs its
+> own tool commands and there is no sensible combined check. Proceed with
+> whichever folder is chosen, as an explicit path target — same as if the
+> person had typed `/vet <folder>` themselves.
+>
+> **Exactly one manifest type found** fixes `PROJECT_ECOSYSTEM` for the rest of
+> this run: `js` for `package.json`, `dart` for `pubspec.yaml`, `go` for
+> `go.mod`. When it is `dart`, also read the `pubspec.yaml`: a `flutter:` entry
+> under `dependencies:` (the `sdk: flutter` form) or a top-level `flutter:`
+> section fixes `DART_CLI` to `flutter`; neither present fixes it to `dart`.
+> This decision only affects which CLI Step 5 shells out to — it does not
+> change which files the dispatched checks look at.
+>
+> **None found** → Vet cannot check this project. Say so plainly and stop:
+> "Vet only understands JavaScript/TypeScript, Dart/Flutter, and Go projects at
+> the moment, and this one doesn't look like any of those — so I haven't
+> checked it. I'd rather tell you that than give you a clean bill of health I
+> can't back up." Never render a report. A confident all-clear on a project Vet
+> cannot read is the worst output it can produce.
 
 Run, in order, stopping at the first that applies:
 
@@ -107,9 +134,9 @@ in step 2 only applies to auto-detection, never to an explicit target.
 **Collecting files for a `changes` target**: the diff itself, plus untracked
 files from `git ls-files --others --exclude-standard` rendered as synthetic
 `+++`-only additions. Regardless of `.gitignore` contents, always hard-exclude
-by path: `.vet/`, `node_modules/`, `.next/`, `dist/`, `build/`, `out/`,
-`.venv/`, `vendor/`, `coverage/`, `.git/`, any lockfile, and any file over
-200 KB or non-text.
+by path: `.vet/`, `node_modules/`, `.next/`, `dist/`, `build/`, `.dart_tool/`,
+`out/`, `.venv/`, `vendor/`, `coverage/`, `.git/`, any lockfile, and any file
+over 200 KB or non-text.
 
 `.vet/` is excluded first and always, in every target mode. It is where Step 3
 writes its own patch file, so without this a second run collects Vet's output
@@ -169,8 +196,11 @@ out with the check's agent and back in its reply.
 
 Only if already configured — never install anything to make one work. Compile,
 tests, and lint are different things, not one undifferentiated block: each of
-the three rows below resolves independently from its own source, and renders
-**only** when that source resolves.
+the three rows below resolves independently from its own source, per
+`PROJECT_ECOSYSTEM` (fixed in Step 2), and renders **only** when that source
+resolves.
+
+**`PROJECT_ECOSYSTEM` is `js`** — unchanged:
 
 - **`The code compiles`** resolves from a `typecheck` or `build` script in
   `package.json`; failing that, from `npx tsc --noEmit` when a `tsconfig.json`
@@ -180,19 +210,36 @@ the three rows below resolves independently from its own source, and renders
 - **`The project's linter passes`** resolves from a `lint` script in
   `package.json`.
 
+**`PROJECT_ECOSYSTEM` is `dart`** — run `<DART_CLI> analyze` once (`DART_CLI`
+fixed in Step 2) and split its output by severity. Never run `analyze` twice:
+
+- **`The code compiles`** resolves from that one run's **error**-severity
+  results.
+- **`The project's tests pass`** resolves from `<DART_CLI> test`.
+- **`The project's linter passes`** resolves from that same run's
+  **warning/info**-severity results — not a second command.
+
+**`PROJECT_ECOSYSTEM` is `go`**:
+
+- **`The code compiles`** resolves from `go build ./...`.
+- **`The project's tests pass`** resolves from `go test ./...`.
+- **`The project's linter passes`** resolves from `golangci-lint run`, only
+  when `command -v golangci-lint` resolves or a `.golangci.yml`/
+  `.golangci.yaml` exists at the project root; the row is absent otherwise —
+  the same "don't render what doesn't resolve" rule as a JS project with no
+  `lint` script.
+
 A row whose source doesn't resolve at all is not rendered — not even as
 "skipped." There is nothing to install and nothing to fix for that row, and a
 "skipped" row would read as a chore the person is expected to go and complete.
 
-When a row's source *does* resolve but the command still can't actually run —
-`node_modules` is missing, or the command isn't found — the row is **never a
-failure**; missing tooling is not a defect in the feature. Render that row as
-**"Couldn't run"** and say why, in one plain line naming the command to fix
-it, e.g. for `The project's tests pass`: "This project has its own tests, but
-its dependencies aren't installed, so I couldn't run them. Run `npm install`
-in this folder and try `/vet` again to include them." Adapt the sentence to
-name the row in question (tests, lint, or the type/build check). Never run the
-install yourself — offer it and let the person decide.
+When a row's source *does* resolve but the command still can't actually
+run — dependencies aren't fetched, or the toolchain itself isn't found — the
+row is **never a failure**; missing tooling is not a defect in the feature.
+Render that row as **"Couldn't run"** and say why, naming the exact command to
+fix it: `npm install` (`js`), `dart pub get` or `flutter pub get` matching
+`DART_CLI` (`dart`), or `go mod download` (`go`). Adapt the sentence to name
+the row in question (tests, lint, or the type/build check).
 
 **This is an offer, never a gate.** Everything else proceeds exactly as
 normal: all the dispatched checks still run, and the full report still
@@ -207,8 +254,8 @@ its own name — no longer grouped under one shared heading.
 > `The code compiles` is the direct detection of the top failure mode. Lint is
 > retained knowingly despite polish being out of scope: its output is
 > mechanically true, cannot false-positive, and rules such as `exhaustive-deps`
-> and `no-undef` catch real defects rather than style. If it proves noisy in
-> practice, this is the paragraph to revisit.
+> and `no-undef` (or their Dart/Go analogues) catch real defects rather than
+> style. If it proves noisy in practice, this is the paragraph to revisit.
 
 ## Step 6 — Dispatch
 
@@ -446,9 +493,10 @@ reconstruct from the code. Write it to the project root after the report.
 
 **Naming test gaps.** For each dispatched check's row that resolved `fail` in
 Step 7, take the file(s) named in its `[WHAT]` text. For each such file,
-search test-shaped files (`*.test.*`, `*.spec.*`, anything under
-`__tests__/`) in the checked target for a reference to that file — an
-`import` or `require` naming its path or basename, with or without extension.
+search test-shaped files (`*.test.*`, `*.spec.*`, `*_test.go`, `*_test.dart`,
+anything under `__tests__/` or `test/`) in the checked target for a reference
+to that file — an `import` or `require` naming its path or basename, with or
+without extension.
 A same-named test file that does not itself reference the flagged file does
 not count; only an actual reference does.
 
@@ -465,10 +513,10 @@ Presence only.
 
 **When `TARGET_KIND` is `changes`**, also consider every file in Step 2's
 collected changes matching the dispatched checks' source extensions
-(`**/*.tsx`, `**/*.jsx`, `**/*.ts`, `**/*.js`, `**/*.vue`, `**/*.svelte`),
-excluding test/story/fixture/mock files by the same names used throughout the
-checks. Skip any file already named in the flagged-file part above — it is
-not named twice.
+(`**/*.tsx`, `**/*.jsx`, `**/*.ts`, `**/*.js`, `**/*.vue`, `**/*.svelte`,
+`**/*.dart`, `**/*.go`), excluding test/story/fixture/mock files by the same
+names used throughout the checks. Skip any file already named in the
+flagged-file part above — it is not named twice.
 
 For each remaining touched file, run the same reference search as above. If
 no test file references it, add it to a second list within the same section.

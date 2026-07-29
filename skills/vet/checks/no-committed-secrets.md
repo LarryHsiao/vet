@@ -77,7 +77,7 @@ configuration the receiver would need and cannot find.
 - Random-looking strings demonstrably not credentials: UUIDs, commit SHAs,
   content hashes, lockfile integrity digests, CSS hashes.
 - Anything under `node_modules/`, `dist/`, `build/`, `.next/`, `coverage/`,
-  `vendor/`, or a lockfile.
+  `vendor/`, `.dart_tool/`, or a lockfile.
 - More than three instances. Name the three and count the rest.
 
 **Two rules this check must obey.**

@@ -1,7 +1,7 @@
 ---
 name: Everything it needs is actually here
 scope: [changes, project]
-applies_to: ["**/*.tsx", "**/*.jsx", "**/*.ts", "**/*.js", "**/*.vue", "**/*.svelte"]
+applies_to: ["**/*.tsx", "**/*.jsx", "**/*.ts", "**/*.js", "**/*.vue", "**/*.svelte", "**/*.dart", "**/*.go"]
 ---
 
 Work that runs on the machine it was built on will not necessarily run anywhere
@@ -12,15 +12,20 @@ The receiving engineer meets it as a broken clone, and the first hour of the
 handoff goes to reconstructing an environment rather than doing the work.
 
 Resolve every import in the target and report the ones that would not resolve
-for someone starting from a fresh clone.
+for someone starting from a fresh clone. Use the subsection below matching the
+file's language — JavaScript/TypeScript, Dart/Flutter, and Go import
+resolution are different problems wearing the same shape.
 
-**Two ways to resolve, and both must be tried in order.** If the project is
-tracked in git, compare against the files git knows about, so a file present on
-disk but never committed is correctly reported as missing. If the project is
-**not** tracked in git — which is common, because the person's assistant
-scaffolded the project and nobody ran `git init` — fall back to comparing
-against the files on disk. Never skip the check because git is absent; the
-disk comparison still catches every missing file and every undeclared package.
+**Two ways to resolve, and both must be tried in order, for every language
+below.** If the project is tracked in git, compare against the files git
+knows about, so a file present on disk but never committed is correctly
+reported as missing. If the project is **not** tracked in git — which is
+common, because the person's assistant scaffolded the project and nobody ran
+`git init` — fall back to comparing against the files on disk. Never skip the
+check because git is absent; the disk comparison still catches every missing
+file and every undeclared package.
+
+## JavaScript/TypeScript
 
 **Pass when**
 
@@ -72,7 +77,79 @@ disk comparison still catches every missing file and every undeclared package.
   you cannot confirm the alias is undefined, do not guess.
 - More than three instances. Name the three clearest and count the rest.
 
-On fail, the `[FIX]` names each missing item and its route: commit the file, or
-add the package with the exact command (`npm install <pkg>`), or correct the
-path. Do not suggest deleting the import to make the error disappear, and do not
+## Dart/Flutter
+
+**Pass when**
+
+- Every `import 'package:x/x.dart'` resolves to an entry in `pubspec.yaml`'s
+  `dependencies` or `dev_dependencies`.
+- Every relative import (`import 'foo.dart'`, `import '../foo.dart'`) resolves
+  to a file that exists — and, when git is present, is tracked by git.
+- A `path:` or `git:` dependency in `pubspec.yaml` resolves against the
+  location it declares.
+
+**Fail when**
+
+- A `package:` import names a package absent from every dependency field in
+  `pubspec.yaml`.
+- A relative import points at a `.dart` file that does not exist.
+- A relative import points at a file that exists on disk but is untracked, in
+  a git project.
+- A `pubspec.yaml` is absent entirely while `package:` imports exist, in a
+  project that is plainly Dart or Flutter.
+
+**Do not flag**
+
+- Dart/Flutter SDK core libraries: any `dart:*` import (`dart:core`,
+  `dart:async`, `dart:io`, `dart:convert`, `dart:math`, `dart:collection`,
+  `dart:typed_data`, and the rest).
+- Generated files: `*.g.dart`, `*.freezed.dart`, `*.gr.dart`, and anything
+  under `.dart_tool/` or `build/`.
+- Tests and anything under `test/`, `test_driver/`, `integration_test/`.
+- A `path:` or `git:` dependency you have not checked the referenced location
+  for. If you cannot confirm it is missing, do not guess.
+- Transitive imports inside third-party pub packages. Only imports written in
+  this project's own files are in scope.
+- More than three instances. Name the three clearest and count the rest.
+
+## Go
+
+**Pass when**
+
+- Every import path matches an entry in `go.mod`'s `require` block, is a
+  standard library package, or begins with the module's own `module`
+  declaration (an internal package).
+- An internal package's directory exists — and, when git is present, is
+  tracked by git.
+
+**Fail when**
+
+- An import path resolves to neither a `go.mod` require entry, the standard
+  library, nor the module's own declared path.
+- An internal package's directory exists on disk but is untracked, in a git
+  project.
+- A `go.mod` is absent entirely while non-standard-library imports exist, in a
+  project that is plainly Go.
+
+**Do not flag**
+
+- Standard library imports — no fixed list; treat an import with no dot in its
+  first path segment as standard library unless it also matches an internal
+  package path.
+- Files under `vendor/` — a vendored, checked-in copy of a resolved
+  dependency.
+- Transitive imports inside third-party modules. Only imports written in this
+  project's own files are in scope.
+- Generated files: `*_gen.go`, `*.pb.go`, and anything carrying a `// Code
+  generated ... DO NOT EDIT.` header.
+- Test files (`_test.go`) and anything under `testdata/`.
+- More than three instances. Name the three clearest and count the rest.
+
+## On fail
+
+Name each missing item and its route, matched to the language: commit the
+file; for JavaScript/TypeScript add the package with the exact command
+(`npm install <pkg>`); for Dart run `dart pub add <pkg>` (or add it to
+`pubspec.yaml` directly); for Go run `go get <module>`; or correct the path.
+Do not suggest deleting the import to make the error disappear, and do not
 suggest a lint suppression — the code needs the thing it is asking for.
