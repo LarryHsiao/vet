@@ -140,10 +140,13 @@ Run, in order, stopping at the first that applies:
    chosen).
 5. No base branch resolves at all, the tree is clean, and rule 3 didn't
    already apply → stop before checking anything. Call `AskUserQuestion`
-   once, offering: name a branch to diff against (if one is given, resolve
+   once, offering: name a branch to compare against (if one is given, resolve
    it with `git rev-parse --verify <name>` and diff against its merge-base,
    same as rule 2's clean case), the whole project, or a folder. Proceed
-   with whichever is chosen.
+   with whichever is chosen, and build `TARGET_SENTENCE` to match (e.g. "I
+   checked everything on this line of work — N files since it split off from
+   `<base>`." if a branch is named; for whole project or folder, use the same
+   phrasing rule 1 does for those outcomes).
 
 If the user gave `all`, `recent`, or a path explicitly, use that target and
 build the matching sentence instead of running this cascade — the
