@@ -85,8 +85,15 @@ wasn't understood.
 
 Run, in order, stopping at the first that applies:
 
-1. `git rev-parse --show-toplevel` fails → **target: project** (whole tree).
-   Sentence: "This project isn't tracked in Git, so I checked the whole thing."
+1. `git rev-parse --show-toplevel` fails → stop before checking anything.
+   Call `AskUserQuestion` once: check the whole project, or point at a
+   folder (offer any folders visible at the project's top level as
+   candidates, alongside "check everything"). Proceed with whichever is
+   chosen, exactly as if the person had typed `/vet all` or `/vet <folder>`
+   themselves, and build `TARGET_SENTENCE` to match that choice (e.g. "This
+   project isn't tracked in Git, so I checked the whole thing." for whole
+   project; the same folder-target phrasing an explicit `/vet <folder>`
+   would use, otherwise).
 2. Current branch has commits ahead of its base — check `git status --porcelain`
    before deciding what this means.
 
@@ -95,10 +102,11 @@ Run, in order, stopping at the first that applies:
    `origin/master`, `origin/develop`, `origin/trunk`, then the local `main`,
    `master`, `develop`, `trunk`. **Prefer the remote-tracking ref** — on a
    project whose default branch *is* `main`, a local `main` base resolves to
-   the current branch itself, yields zero commits ahead, and silently drops
-   through to rule 4, where only the single most recent commit gets checked.
-   People work directly on the default branch constantly, so this is a common
-   path, not an edge case. `origin/main` keeps unpushed commits visible.
+   the current branch itself, yields zero commits ahead, and drops through
+   to rule 4, where the person is asked what to check rather than something
+   being picked silently for them. People work directly on the default
+   branch constantly, so this is a common path, not an edge case.
+   `origin/main` keeps unpushed commits visible.
 
    **Counting commits ahead**: `git rev-list --count <base>..HEAD`. Greater
    than zero means this rule applies. If no base resolves at all (a repo with
@@ -116,20 +124,31 @@ Run, in order, stopping at the first that applies:
      work is not the outcome being asked for here, and naming it as an option
      invites a non-technical person to destroy work they cannot recover.
    - **Empty (clean)** → **target: changes**, diffed against the merge-base.
+     This is the default path — the one auto-detection is meant to land on.
      Sentence: "I checked everything on this line of work — N files since it
      split off from `<base>`."
-3. `git status --porcelain` is non-empty (and Step 2 didn't already apply —
+3. `git status --porcelain` is non-empty (and rule 2 didn't already apply —
    i.e. this branch has no commits ahead of the default branch) →
    **target: changes** (uncommitted). Sentence: "I checked the N files you
    changed but haven't saved to the project's history yet."
-4. Clean tree, on the default branch → **target: changes**, `git show HEAD`.
-   Sentence: "Nothing is unsaved, so I checked the most recent batch of changes."
-5. Anything else → **target: project**. Sentence: "I couldn't find recent
-   changes, so I checked the whole project."
+4. Clean tree, and the base resolved with zero commits ahead of it (the
+   current branch IS the base, or simply hasn't diverged from it) → stop
+   before checking anything. Call `AskUserQuestion` once, offering: the most
+   recent commit, the whole project, or a folder. Proceed with whichever is
+   chosen, and build `TARGET_SENTENCE` to match (e.g. "Nothing is unsaved,
+   so I checked the most recent batch of changes." if the last commit is
+   chosen).
+5. No base branch resolves at all, the tree is clean, and rule 3 didn't
+   already apply → stop before checking anything. Call `AskUserQuestion`
+   once, offering: name a branch to diff against (if one is given, resolve
+   it with `git rev-parse --verify <name>` and diff against its merge-base,
+   same as rule 2's clean case), the whole project, or a folder. Proceed
+   with whichever is chosen.
 
 If the user gave `all`, `recent`, or a path explicitly, use that target and
-build the matching sentence instead of running this cascade — the stop-and-ask
-in step 2 only applies to auto-detection, never to an explicit target.
+build the matching sentence instead of running this cascade — the
+stop-and-ask cases above only apply to auto-detection, never to an explicit
+target.
 
 **Collecting files for a `changes` target**: the diff itself, plus untracked
 files from `git ls-files --others --exclude-standard` rendered as synthetic
