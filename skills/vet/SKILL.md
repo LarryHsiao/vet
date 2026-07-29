@@ -17,6 +17,7 @@ allowed-tools:
   - Bash(npm run build*)
   - Bash(npm run test*)
   - Bash(npx tsc --noEmit*)
+  - Bash(npx eslint*)
   - Bash(dart analyze*)
   - Bash(flutter analyze*)
   - Bash(dart test*)
@@ -224,34 +225,53 @@ the three rows below resolves independently from its own source, per
 `PROJECT_ECOSYSTEM` (fixed in Step 2), and renders **only** when that source
 resolves.
 
-**`PROJECT_ECOSYSTEM` is `js`** — unchanged:
+When `TARGET_KIND` is `changes`, the linter row alone is scoped to the files
+Step 2 already collected for that target — passed as explicit path arguments
+to the underlying linter, never the configured whole-project script. The
+compile and test rows stay whole-project always, regardless of `TARGET_KIND`:
+a build or typecheck needs the full dependency graph, and scoping either risks
+silently missing a regression in a file the diff didn't touch but broke.
+
+**`PROJECT_ECOSYSTEM` is `js`**:
 
 - **`The code compiles`** resolves from a `typecheck` or `build` script in
   `package.json`; failing that, from `npx tsc --noEmit` when a `tsconfig.json`
-  exists.
+  exists. Always whole-project.
 - **`The project's tests pass`** resolves from a `test` script in
-  `package.json`.
+  `package.json`. Always whole-project.
 - **`The project's linter passes`** resolves from a `lint` script in
-  `package.json`.
+  `package.json` — that script's presence still gates whether this row
+  renders at all. **When `TARGET_KIND` is `project`**, run that script
+  unchanged. **When `TARGET_KIND` is `changes`**, don't run the configured
+  script — invoke the linter directly against the collected files instead:
+  `npx eslint <files>`.
 
-**`PROJECT_ECOSYSTEM` is `dart`** — run `<DART_CLI> analyze` once (`DART_CLI`
-fixed in Step 2) and split its output by severity. Never run `analyze` twice:
+**`PROJECT_ECOSYSTEM` is `dart`** (`DART_CLI` fixed in Step 2):
 
-- **`The code compiles`** resolves from that one run's **error**-severity
-  results.
-- **`The project's tests pass`** resolves from `<DART_CLI> test`.
-- **`The project's linter passes`** resolves from that same run's
-  **warning/info**-severity results — not a second command.
+- **`The code compiles`** resolves from `<DART_CLI> analyze`, always
+  whole-project, taking that run's **error**-severity results.
+- **`The project's tests pass`** resolves from `<DART_CLI> test`, always
+  whole-project.
+- **`The project's linter passes`** resolves from `analyze`'s
+  **warning/info**-severity results. **When `TARGET_KIND` is `project`**,
+  reuse the same whole-project run the compile row already made — never run
+  `analyze` twice in that case. **When `TARGET_KIND` is `changes`**, that
+  shared run only carries whole-project results, so run `analyze` a second
+  time, scoped to the collected files (`<DART_CLI> analyze <files>`), and
+  take this row's results from that second run instead.
 
 **`PROJECT_ECOSYSTEM` is `go`**:
 
-- **`The code compiles`** resolves from `go build ./...`.
-- **`The project's tests pass`** resolves from `go test ./...`.
+- **`The code compiles`** resolves from `go build ./...`, always whole-project.
+- **`The project's tests pass`** resolves from `go test ./...`, always
+  whole-project.
 - **`The project's linter passes`** resolves from `golangci-lint run`, only
   when `command -v golangci-lint` resolves or a `.golangci.yml`/
   `.golangci.yaml` exists at the project root; the row is absent otherwise —
   the same "don't render what doesn't resolve" rule as a JS project with no
-  `lint` script.
+  `lint` script. **When `TARGET_KIND` is `project`**, run it unchanged. **When
+  `TARGET_KIND` is `changes`**, scope it to the collected files instead:
+  `golangci-lint run <files>`.
 
 A row whose source doesn't resolve at all is not rendered — not even as
 "skipped." There is nothing to install and nothing to fix for that row, and a
