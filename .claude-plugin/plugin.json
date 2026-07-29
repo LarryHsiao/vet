@@ -1,6 +1,6 @@
 {
   "name": "vet",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A quality check for features built with an AI coding assistant. Run /vet before handing work to an engineer: it explains in plain language what is wrong, why it matters, and gives you text to paste straight back to your assistant.",
   "author": {
     "name": "Vet maintainers"
