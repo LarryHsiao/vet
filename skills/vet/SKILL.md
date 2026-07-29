@@ -87,13 +87,14 @@ Run, in order, stopping at the first that applies:
 
 1. `git rev-parse --show-toplevel` fails → stop before checking anything.
    Call `AskUserQuestion` once: check the whole project, or point at a
-   folder (offer any folders visible at the project's top level as
-   candidates, alongside "check everything"). Proceed with whichever is
-   chosen, exactly as if the person had typed `/vet all` or `/vet <folder>`
-   themselves, and build `TARGET_SENTENCE` to match that choice (e.g. "This
-   project isn't tracked in Git, so I checked the whole thing." for whole
-   project; the same folder-target phrasing an explicit `/vet <folder>`
-   would use, otherwise).
+   folder (offer the two or three largest source folders at the project's
+   top level, by file count, as candidates, alongside "check everything"
+   — never silently sample). Proceed with whichever is chosen, exactly as
+   if the person had typed `/vet all` or `/vet <folder>` themselves, and
+   build `TARGET_SENTENCE` to match that choice (e.g. "This project isn't
+   tracked in Git, so I checked the whole thing." for whole project; the
+   same folder-target phrasing an explicit `/vet <folder>` would use,
+   otherwise).
 2. Current branch has commits ahead of its base — check `git status --porcelain`
    before deciding what this means.
 
@@ -135,9 +136,10 @@ Run, in order, stopping at the first that applies:
    current branch IS the base, or simply hasn't diverged from it) → stop
    before checking anything. Call `AskUserQuestion` once, offering: the most
    recent commit, the whole project, or a folder. Proceed with whichever is
-   chosen, and build `TARGET_SENTENCE` to match (e.g. "Nothing is unsaved,
-   so I checked the most recent batch of changes." if the last commit is
-   chosen).
+   chosen, exactly as if the person had typed `/vet recent`, `/vet all`, or
+   `/vet <folder>` themselves, and build `TARGET_SENTENCE` to match (e.g.
+   "Nothing is unsaved, so I checked the most recent batch of changes." if
+   the last commit is chosen).
 5. No base branch resolves at all, the tree is clean, and rule 3 didn't
    already apply → stop before checking anything. Call `AskUserQuestion`
    once, offering: name a branch to compare against (if one is given, resolve
