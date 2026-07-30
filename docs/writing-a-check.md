@@ -118,10 +118,14 @@ not on the shape.
    `test/fixtures/pretends-finished/`, `test/fixtures/pretends-finished-dart/`,
    and `test/fixtures/pretends-finished-go/`; `test/fixtures/missing-pieces/`,
    `test/fixtures/missing-pieces-dart/`, and `test/fixtures/missing-pieces-go/`;
-   and `test/fixtures/leaked-secrets/`. The two file-scoped checks
+   `test/fixtures/leaked-secrets/`; and `test/fixtures/unknown-backend/` and
+   `test/fixtures/unknown-backend-dart/`. The two oldest file-scoped checks
    (`nothing-pretends-to-be-finished`, `everything-needed-is-here`) each carry
-   one fixture directory per supported language; the secrets check has only
-   the one, since its rule doesn't branch by language. This path sits
+   one fixture directory per supported language, including Go; the secrets
+   check has only the one, since its rule doesn't branch by language; the
+   backend-host check (`nothing-calls-an-unknown-backend`) carries a JS and
+   Dart pair only, since it's scoped to frontend/app code and doesn't apply to
+   a Go backend calling itself. This path sits
    under a directory literally named `fixtures/`, which every check's own
    `Do not flag` section tells it to ignore — that would silently defeat the
    whole smoke test. `SKILL.md` Step 6 carries a standing "Fixture-exclusion

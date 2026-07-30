@@ -58,7 +58,7 @@ resolves — nothing to install, nothing to configure:
   JavaScript/TypeScript; `dart analyze`'s warnings/info for Dart/Flutter;
   `golangci-lint run` for Go, when it's configured.
 
-Three more are dispatched, one subagent each, over the files that changed (or
+Four more are dispatched, one subagent each, over the files that changed (or
 the whole project, depending on what `/vet` decides to check):
 
 - **Everything it needs is actually here** — a file imported but never
@@ -71,6 +71,11 @@ the whole project, depending on what `/vet` decides to check):
   placeholder assets left in without saying so. A labelled stub — a comment, a
   name like `SAMPLE_TEAM`, visible "sample data" text — passes on purpose;
   only the unlabelled kind gets flagged.
+- **Nothing calls a backend the project doesn't know** — a new call shaped
+  like our own API, pointing at a host the project never configured: an
+  invented endpoint, or a near-miss typo of the real one. Third-party calls
+  (Stripe, Sentry, and the like) are out of scope entirely — only first-party-
+  looking calls are judged.
 
 This is a starting set, not a complete one. See `docs/writing-a-check.md` to add
 more.
@@ -130,11 +135,13 @@ itself a JavaScript/TypeScript, Dart/Flutter, or Go project — running `/vet`
 here trips the project-type guard and refuses, rather than checking anything.
 The fixtures under `test/fixtures/` are exercised instead by copying them into
 a separate scratch project — see `docs/writing-a-check.md`. Each of the two
-file-scoped checks has a JS, Dart, and Go fixture pair
+oldest file-scoped checks has a JS, Dart, and Go fixture pair
 (`missing-pieces`/`missing-pieces-dart`/`missing-pieces-go`,
 `pretends-finished`/`pretends-finished-dart`/`pretends-finished-go`); the
 secrets check has only one (`leaked-secrets/`), since its rule doesn't branch
-by language.
+by language. The backend-host check has a JS and Dart pair only
+(`unknown-backend`/`unknown-backend-dart`) — no Go, since it's scoped to
+frontend/app code and doesn't apply to a Go backend calling itself.
 
 `docs/superpowers/plans/2026-07-27-handoff-integrity.md` is a fourth,
 deliberate trip-point for the secrets check: it quotes the same fake key
