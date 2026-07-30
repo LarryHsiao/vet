@@ -110,6 +110,10 @@ language subsections below.
   `_test.go` file.
 - An existing, already-tested function gains a new branch and no test
   exercises that specific branch, while its other branches remain tested.
+- A new function's error-return path (an `if err != nil` branch it introduces)
+  has no test case simulating that failure and asserting the error is handled
+  — even when the function's success path is tested. A test case existing for
+  the function is not the same as a test case for each of its branches.
 
 **Do not flag**
 

@@ -141,17 +141,15 @@ This repo has no root `package.json`, `pubspec.yaml`, or `go.mod`, so it isn't
 itself a JavaScript/TypeScript, Dart/Flutter, or Go project — running `/vet`
 here trips the project-type guard and refuses, rather than checking anything.
 The fixtures under `test/fixtures/` are exercised instead by copying them into
-a separate scratch project — see `docs/writing-a-check.md`. Each of the two
-oldest file-scoped checks has a JS, Dart, and Go fixture pair
+a separate scratch project — see `docs/writing-a-check.md`. The two oldest file-scoped checks and the new-logic-without-a-test check each
+have a JS, Dart, and Go fixture pair
 (`missing-pieces`/`missing-pieces-dart`/`missing-pieces-go`,
-`pretends-finished`/`pretends-finished-dart`/`pretends-finished-go`); the
-secrets check has only one (`leaked-secrets/`), since its rule doesn't branch
-by language. The backend-host check has a JS and Dart pair only
+`pretends-finished`/`pretends-finished-dart`/`pretends-finished-go`,
+`new-logic-lands-without-a-test`/`new-logic-lands-without-a-test-dart`/`new-logic-lands-without-a-test-go`);
+the secrets check has only one (`leaked-secrets/`), since its rule doesn't
+branch by language. The backend-host check has a JS and Dart pair only
 (`unknown-backend`/`unknown-backend-dart`) — no Go, since it's scoped to
-frontend/app code and doesn't apply to a Go backend calling itself. The
-new-logic-without-a-test check has a JS/TS fail/pass pair only
-(`new-logic-lands-without-a-test/`) so far — a Dart and Go pair are a known,
-deliberately-carried gap, not yet built.
+frontend/app code and doesn't apply to a Go backend calling itself.
 
 `docs/superpowers/plans/2026-07-27-handoff-integrity.md` is a fourth,
 deliberate trip-point for the secrets check: it quotes the same fake key
