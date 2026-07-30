@@ -58,7 +58,7 @@ resolves — nothing to install, nothing to configure:
   JavaScript/TypeScript; `dart analyze`'s warnings/info for Dart/Flutter;
   `golangci-lint run` for Go, when it's configured.
 
-Four more are dispatched, one subagent each, over the files that changed (or
+Five more are dispatched, one subagent each, over the files that changed (or
 the whole project, depending on what `/vet` decides to check):
 
 - **Everything it needs is actually here** — a file imported but never
@@ -76,6 +76,13 @@ the whole project, depending on what `/vet` decides to check):
   invented endpoint, or a near-miss typo of the real one. Third-party calls
   (Stripe, Sentry, and the like) are out of scope entirely — only first-party-
   looking calls are judged.
+- **New logic lands without a test** — a new function, hook, or component with
+  no test anywhere, or a new branch added to an already-tested unit (an error
+  path, a guard, a new case) that its siblings are tested but it isn't. Skips
+  entirely on a project with no test infrastructure at all. When it fires, the
+  fix text also checks whether the project's own `CLAUDE.md`/`AGENTS.md` states
+  a "new code needs a test" convention already, and suggests one line to add if
+  not.
 
 This is a starting set, not a complete one. See `docs/writing-a-check.md` to add
 more.
@@ -141,7 +148,10 @@ oldest file-scoped checks has a JS, Dart, and Go fixture pair
 secrets check has only one (`leaked-secrets/`), since its rule doesn't branch
 by language. The backend-host check has a JS and Dart pair only
 (`unknown-backend`/`unknown-backend-dart`) — no Go, since it's scoped to
-frontend/app code and doesn't apply to a Go backend calling itself.
+frontend/app code and doesn't apply to a Go backend calling itself. The
+new-logic-without-a-test check has a JS/TS fail/pass pair only
+(`new-logic-lands-without-a-test/`) so far — a Dart and Go pair are a known,
+deliberately-carried gap, not yet built.
 
 `docs/superpowers/plans/2026-07-27-handoff-integrity.md` is a fourth,
 deliberate trip-point for the secrets check: it quotes the same fake key
